@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Triumphant Crab — lift the fish as high as you can</title>
+<style>
+  /* ===========================================================================
+     TRIUMPHANT CRAB
+     Tap like crazy to extend the crab's claws and lift the fish skyward.
+     Gravity grows the higher you go. Background / crab / fish are AI-generated
+     (Google "Nano Banana 2" / Gemini 3 Pro Image); the telescoping claw-arms
+     are drawn procedurally on a canvas.
+     =========================================================================== */
+  :root{
+    --coral:#ff6a3d; --coral-d:#e2502a; --sea:#2aa6c8; --ink:#0e2a33; --cream:#fff7ec;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; height:100%; background:#06222b; overflow:hidden;
+    font-family:"Trebuchet MS","Segoe UI",system-ui,Arial,sans-serif;
+    color:var(--ink); overscroll-behavior:none; touch-action:none; user-select:none;
+  }
+  #stage{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;}
+  /* Portrait play box */
+  #frame{
+    position:relative; height:100%; aspect-ratio:9/16; max-width:100%;
+    background:#bfe3ec; overflow:hidden; box-shadow:0 0 60px rgba(0,0,0,.5);
+  }
+  canvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
+
+  /* ---- HUD ---- */
+  #hud{position:absolute; top:0; left:0; right:0; z-index:3;
+       display:flex; justify-content:space-between; align-items:flex-start;
+       padding:12px 12px; pointer-events:none;}
+  .tag{background:rgba(255,255,255,.82); backdrop-filter:blur(3px);
+       border-radius:12px; padding:6px 11px; box-shadow:0 3px 0 rgba(0,0,0,.12);
+       font-weight:bold; line-height:1.05; text-align:center;}
+  .tag small{display:block; font-size:10px; letter-spacing:1.5px; color:#6a7d83; font-weight:bold;}
+  .tag b{font-size:22px; color:var(--ink);}
+  .tag .u{font-size:12px; color:#6a7d83;}
+  #best b{color:var(--coral-d);}
+  #muteBtn{position:absolute; right:10px; bottom:10px; z-index:3;
+       cursor:pointer; border:none; font-family:inherit;
+       background:rgba(255,255,255,.82); border-radius:12px; padding:6px 10px;
+       font-size:16px; box-shadow:0 3px 0 rgba(0,0,0,.12);}
+
+  /* "Published with dropthis" badge */
+  #badge{position:absolute; left:10px; bottom:10px; z-index:3; font-size:11px; font-weight:bold;
+     color:#fff; background:rgba(14,42,51,.55); border-radius:10px; padding:5px 9px; letter-spacing:.3px;}
+  #badge b{color:#7fe0ff;}
+
+  /* ---- Overlays ---- */
+  .overlay{position:absolute; inset:0; z-index:4; display:flex; flex-direction:column;
+     align-items:center; justify-content:center; text-align:center; padding:26px;
+     background:rgba(8,40,52,.45);}
+  .overlay.hidden{display:none;}
+  .card{background:rgba(255,247,236,.94); border-radius:22px; padding:24px 22px;
+     box-shadow:0 14px 0 rgba(0,0,0,.18), 0 30px 60px rgba(0,0,0,.35); max-width:88%;}
+  .card h1{margin:0 0 4px; font-size:32px; color:var(--coral-d); letter-spacing:.5px;
+     text-shadow:2px 2px 0 #ffd9b0;}
+  .card .sub{margin:0 0 14px; font-size:14px; color:#3f5560; line-height:1.45;}
+  .card .quip{margin:8px 0 0; font-size:12px; color:#8a9aa0; font-style:italic;}
+  .big{font-size:15px; color:#3f5560;}
+  .score{font-size:46px; font-weight:bold; color:var(--ink); margin:6px 0 0;}
+  .score .u{font-size:18px; color:#6a7d83;}
+  .bestline{font-size:14px; color:var(--coral-d); font-weight:bold; margin-top:4px;}
+  .btn{margin-top:16px; font-family:inherit; font-weight:bold; font-size:17px; cursor:pointer;
+     color:#fff; background:var(--coral); border:none; border-radius:16px; padding:14px 26px;
+     box-shadow:0 6px 0 var(--coral-d); letter-spacing:.5px;}
+  .btn:active{transform:translateY(4px); box-shadow:0 2px 0 var(--coral-d);}
+  .hint{margin-top:12px; font-size:12px; color:#8a9aa0;}
+  .tapper{position:absolute; bottom:34px; left:0; right:0; text-align:center; z-index:3;
+     color:#fff; font-weight:bold; font-size:14px; letter-spacing:1px; pointer-events:none;
+     text-shadow:0 2px 6px rgba(0,0,0,.5); animation:pulse 1s ease-in-out infinite;}
+  .tapper.hidden{display:none;}
+  @keyframes pulse{0%,100%{opacity:.55; transform:scale(1)}50%{opacity:1; transform:scale(1.06)}}
+
+  #loading{position:absolute; inset:0; z-index:5; display:flex; align-items:center;
+     justify-content:center; background:#bfe3ec; color:#3f5560; font-weight:bold; font-size:16px;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="frame">
+    <canvas id="game"></canvas>
+
+    <button id="muteBtn" title="Mute (M)">🔊</button>
+
+    <div id="badge">Published with <b>dropthis</b></div>
+
+    <div class="tapper hidden" id="tapper">TAP! TAP! TAP!</div>
+
+    <!-- Title -->
+    <div class="overlay" id="titleScreen">
+      <div class="card">
+        <h1>Triumphant Crab</h1>
+        <p class="sub">Tap like crazy to extend the crab's claws and lift the fish
+          as high as you can.<br>The higher it goes, the harder gravity fights back.</p>
+        <button class="btn" id="startBtn">Start lifting</button>
+        <div class="hint">Tap screen / Space / ▲ &nbsp;•&nbsp; mash fast!</div>
+        <p class="quip">“Shot of the year candidate.”</p>
+      </div>
+    </div>
+
+    <!-- Game over -->
+    <div class="overlay hidden" id="overScreen">
+      <div class="card">
+        <div class="big">It came back down.</div>
+        <div class="score" id="finalScore">0.0<span class="u"> m</span></div>
+        <div class="bestline" id="bestLine">Best 0.0 m</div>
+        <button class="btn" id="retryBtn">Try again</button>
+        <div class="hint">No repo. No deploy. Just one URL — dropthis.app</div>
+      </div>
+    </div>
+
+    <div id="loading">Loading the beach…</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===========================================================================
+   Assets (AI-generated). Swap these paths for your own PNGs to reskin.
+   =========================================================================== */
+const ASSETS = { bg:"assets/bg.png", crab:"assets/crab.png", fish:"assets/fish.png" };
+// crab claw-tip anchor points, measured as fractions of the crab image:
+const CRAB_TIP_L = {x:0.223, y:0.110};
+const CRAB_TIP_R = {x:0.757, y:0.207};
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+/* ---- physics (fraction space: f in [0,1], tuned by simulation) ---- */
+const PHYS = { IMP:0.9, G0:2.7, KG:9.0, DRAG:0.8 };
+
+/* ---- state ---- */
+const S = { TITLE:0, PLAY:1, OVER:2 };
+let state = S.TITLE;
+let f = 0, vf = 0, peakF = 0, launched = false;
+let best = parseFloat(localStorage.getItem("crab_best") || "0");
+let thrust = 0;            // visual claw jab
+let strainShake = 0;
+let overAt = 0, lastTier = 0, finishShown = false;
+let crabPow = 0;           // CRAB health bar value (eased lift power)
+let callout = null;        // MK-style dramatic text {text,born,dur,cols}
+let particles = [], clouds = [];
+let acc = 0, lastT = 0, timeS = 0;
+
+/* ---- layout (recomputed on resize, all in CSS px) ---- */
+let W = 0, H = 0, dpr = 1;
+let L = {};   // derived layout points
+
+const IMG = {};
+function fit(){
+  const r = canvas.getBoundingClientRect();
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = r.width; H = r.height;
+  canvas.width = Math.round(W*dpr); canvas.height = Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  computeLayout();
+}
+function computeLayout(){
+  const crabW = W*0.44, crabH = crabW*(1200/896);
+  const crabX = W*0.5;
+  const feetY = H*0.90;
+  const topY  = feetY - crabH;
+  L.crab = {x:crabX, w:crabW, h:crabH, left:crabX-crabW/2, top:topY, feetY};
+  L.anchorL = {x:L.crab.left + CRAB_TIP_L.x*crabW, y:topY + CRAB_TIP_L.y*crabH};
+  L.anchorR = {x:L.crab.left + CRAB_TIP_R.x*crabW, y:topY + CRAB_TIP_R.y*crabH};
+  L.anchorY = (L.anchorL.y + L.anchorR.y)/2;
+  L.topMargin = H*0.07;
+  L.usable = L.anchorY - L.topMargin;
+  L.restLen = L.usable*0.05;
+  L.maxLen  = L.usable*0.97;
+  const fishW = W*0.54;
+  L.fish = {w:fishW, h:fishW*(848/1264)};
+  L.armW = crabW*0.075;
+}
+
+/* ===========================================================================
+   Audio (Web Audio API)
+   =========================================================================== */
+let actx=null, muted=false;
+function audio(){ if(!actx){const A=window.AudioContext||window.webkitAudioContext; if(A) actx=new A();}
+  if(actx&&actx.state==="suspended") actx.resume(); }
+function blip(freq,dur,type="square",vol=.12,when=0,slideTo=null){
+  if(muted||!actx) return;
+  const t=actx.currentTime+when, o=actx.createOscillator(), g=actx.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(actx.destination); o.start(t); o.stop(t+dur);
+}
+const sTap   = ()=>blip(420+Math.random()*60,.07,"square",.10,0,820);
+const sDing  = ()=>{blip(880,.10,"square",.10);blip(1320,.12,"square",.09,.07);};
+const sStart = ()=>[330,440,550,660].forEach((x,i)=>blip(x,.10,"square",.11,i*.07));
+const sDrop  = ()=>{blip(300,.5,"sawtooth",.14,0,70);blip(140,.5,"square",.10,.04);};
+
+/* ===========================================================================
+   Game flow
+   =========================================================================== */
+function reset(){ f=0; vf=0; peakF=0; launched=false; thrust=0; strainShake=0;
+  particles.length=0; lastTier=0; finishShown=false; crabPow=0; callout=null; }
+function startGame(){ audio(); sStart(); reset(); state=S.PLAY;
+  hide("titleScreen"); hide("overScreen"); document.getElementById("tapper").classList.remove("hidden");
+  shout("FIGHT!", 1.1); }
+function gameOver(){ state=S.OVER; overAt=timeS; sDrop();
+  const m=peakF*100, nb=m>best;
+  if(nb){ best=m; localStorage.setItem("crab_best", best.toFixed(2));
+    burst(L.crab.x, L.anchorY-(L.maxLen)*peakF, "#ffd24d", 28); }
+  document.getElementById("finalScore").innerHTML = m.toFixed(1)+'<span class="u"> m</span>';
+  document.getElementById("bestLine").textContent = "Best "+best.toFixed(1)+" m";
+  document.getElementById("tapper").classList.add("hidden");
+  // MK finishing callout first, then reveal the result card a beat later
+  shout(nb?"FLAWLESS VICTORY":"GRAVITY WINS", 2.6, nb?["#7a3b00","#ffe14d"]:["#3a0000","#ff5a3c"]);
+  setTimeout(()=>{ if(state===S.OVER) show("overScreen"); }, 1100); }
+
+function tap(){
+  audio();
+  if(state===S.TITLE){ startGame(); return; }
+  if(state===S.OVER){ if(timeS-overAt>1.3) startGame(); return; }
+  // PLAY: pump the claws
+  vf += PHYS.IMP;
+  thrust = Math.min(L.usable*0.05, thrust + L.usable*0.03);
+  sTap();
+  // sand puff at the crab's feet
+  for(let i=0;i<3;i++) particles.push({
+    x:L.crab.x+(Math.random()*2-1)*L.crab.w*0.3, y:L.crab.feetY-4,
+    vx:(Math.random()*2-1)*60, vy:-30-Math.random()*40, life:.5, max:.5,
+    r:2+Math.random()*3, c:"rgba(235,222,180,0.9)", grav:200});
+}
+
+/* ===========================================================================
+   Update
+   =========================================================================== */
+function integrate(h){
+  if(state!==S.PLAY) return;
+  const g = PHYS.G0 + PHYS.KG*f;
+  vf += (-g - PHYS.DRAG*vf)*h;
+  f  += vf*h;
+  if(f<=0){ f=0; if(vf<0) vf=0; }
+  if(f>=1){ f=1; if(vf>0) vf=0; }
+  if(f>0.06) launched=true;
+  if(f>peakF) peakF=f;
+  if(launched && f<=0.0006 && vf<=0) gameOver();
+}
+function update(dt){
+  timeS += dt;
+  // fixed-step physics
+  acc += dt; let guard=0;
+  while(acc>=1/120 && guard++<12){ integrate(1/120); acc-=1/120; }
+
+  thrust *= Math.pow(0.0001, dt);     // fast decay
+  // strain shake grows with height
+  strainShake = f>0.5 ? (f-0.5)*2 : 0;
+
+  // CRAB bar eases toward current lift power; MK callouts every 20 m
+  crabPow += (Math.max(0,Math.min(1,vf/2.0)) - crabPow) * Math.min(1,dt*8);
+  if(state===S.PLAY){
+    const tier=Math.floor(f*100/20);
+    if(tier>lastTier && tier>0){ lastTier=tier; sDing();
+      shout(["","NICE!","BRUTAL!","SAVAGE!","FLAWLESS!","GODLIKE!"][Math.min(5,tier)], 0.9); }
+    if(!finishShown && f>0.85){ finishShown=true; shout("FINISH HIM!", 1.0, ["#3a0000","#ffcf3c"]); }
+  }
+
+  // particles
+  for(const p of particles){ p.vy+=(p.grav||0)*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; }
+  particles = particles.filter(p=>p.life>0);
+
+  // strain sweat drops at altitude
+  if(state===S.PLAY && f>0.55 && Math.random()<0.20){
+    particles.push({x:L.crab.x+(Math.random()*2-1)*L.crab.w*0.4, y:L.crab.top+L.crab.h*0.4,
+      vx:(Math.random()*2-1)*30, vy:-60, life:.6, max:.6, r:2.5, c:"rgba(150,220,255,0.95)", grav:260});
+  }
+  // clouds drift
+  for(const c of clouds){ c.x+=c.vx*dt; if(c.x>W+c.r) c.x=-c.r; if(c.x<-c.r) c.x=W+c.r; }
+
+  updateHud();
+}
+
+/* ===========================================================================
+   Render
+   =========================================================================== */
+function drawCover(img){
+  const s=Math.max(W/img.width, H/img.height), w=img.width*s, h=img.height*s;
+  ctx.drawImage(img,(W-w)/2,(H-h)/2,w,h);
+}
+function render(){
+  ctx.clearRect(0,0,W,H);
+  if(IMG.bg) drawCover(IMG.bg); else { ctx.fillStyle="#bfe3ec"; ctx.fillRect(0,0,W,H); }
+
+  // altitude haze + clouds appear as you climb
+  if(f>0.15){
+    const a=Math.min(.5,(f-0.15)*0.7);
+    const grd=ctx.createLinearGradient(0,0,0,H*0.6);
+    grd.addColorStop(0,`rgba(220,242,255,${a})`); grd.addColorStop(1,"rgba(220,242,255,0)");
+    ctx.fillStyle=grd; ctx.fillRect(0,0,W,H*0.6);
+    ctx.fillStyle=`rgba(255,255,255,${Math.min(.9,a+0.3)})`;
+    for(const c of clouds) cloud(c.x,c.y,c.r);
+  }
+
+  // current display geometry
+  const armLen = L.restLen + f*(L.maxLen-L.restLen) + thrust + idleBob();
+  const fishCX = L.crab.x, fishCY = L.anchorY - armLen;
+  const sx = strainShake ? (Math.random()*2-1)*strainShake*1.5 : 0;
+  const sy = strainShake ? (Math.random()*2-1)*strainShake*1.5 : 0;
+
+  // grip points under the fish
+  const gripL = {x:fishCX - L.fish.w*0.12, y:fishCY + L.fish.h*0.16};
+  const gripR = {x:fishCX + L.fish.w*0.16, y:fishCY + L.fish.h*0.12};
+
+  // crab (recoils down a touch when jabbing)
+  const recoil = thrust*0.35;
+  if(IMG.crab) ctx.drawImage(IMG.crab, L.crab.left+sx, L.crab.top+recoil+sy, L.crab.w, L.crab.h);
+
+  // telescoping claw-arms from the crab's claw tips up to the fish
+  drawArm(L.anchorL.x+sx, L.anchorL.y+recoil+sy, gripL.x, gripL.y, -1);
+  drawArm(L.anchorR.x+sx, L.anchorR.y+recoil+sy, gripR.x, gripR.y, +1);
+
+  // fish (tilts with velocity)
+  drawFish(fishCX, fishCY);
+
+  // particles
+  for(const p of particles){ ctx.globalAlpha=Math.max(0,p.life/p.max); ctx.fillStyle=p.c;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); }
+  ctx.globalAlpha=1;
+
+  drawGauge();
+  drawMKHud();      // Mortal-Kombat-style overlay on top of everything
+  drawCallout();
+}
+
+function idleBob(){ return (state===S.TITLE) ? Math.sin(timeS*2)*L.usable*0.012 : 0; }
+
+const ORANGE="#d9521f", ORANGE_D="#9c3712", ORANGE_L="#ff8a4c";
+function drawArm(ax,ay,bx,by,side){
+  const len=Math.hypot(bx-ax,by-ay)||1;
+  const bow=(L.armW*0.4 + f*L.armW*1.6)*side;     // strain outward with load
+  const cx=(ax+bx)/2+bow, cy=(ay+by)/2;
+  const wd=L.armW;
+  const bez=(t)=>{const u=1-t;return [u*u*ax+2*u*t*cx+t*t*bx, u*u*ay+2*u*t*cy+t*t*by];};
+  ctx.lineCap="round"; ctx.lineJoin="round";
+  // main tube
+  ctx.strokeStyle=ORANGE; ctx.lineWidth=wd;
+  ctx.beginPath(); ctx.moveTo(ax,ay); ctx.quadraticCurveTo(cx,cy,bx,by); ctx.stroke();
+  // dark underside
+  ctx.strokeStyle=ORANGE_D; ctx.lineWidth=wd*0.34;
+  ctx.beginPath(); ctx.moveTo(ax+wd*0.22*side,ay); ctx.quadraticCurveTo(cx+wd*0.22*side,cy,bx+wd*0.22*side,by); ctx.stroke();
+  // highlight
+  ctx.strokeStyle=ORANGE_L; ctx.lineWidth=wd*0.28;
+  ctx.beginPath(); ctx.moveTo(ax-wd*0.22*side,ay); ctx.quadraticCurveTo(cx-wd*0.22*side,cy,bx-wd*0.22*side,by); ctx.stroke();
+  // telescoping segment rings
+  ctx.strokeStyle=ORANGE_D; ctx.lineWidth=2;
+  const step=Math.max(0.05,(wd*1.15)/len);
+  for(let t=step;t<0.98;t+=step){
+    const P=bez(t);
+    const dxt=2*(1-t)*(cx-ax)+2*t*(bx-cx), dyt=2*(1-t)*(cy-ay)+2*t*(by-cy);
+    const tl=Math.hypot(dxt,dyt)||1, nx=-dyt/tl, ny=dxt/tl;
+    ctx.beginPath(); ctx.moveTo(P[0]-nx*wd*0.46,P[1]-ny*wd*0.46); ctx.lineTo(P[0]+nx*wd*0.46,P[1]+ny*wd*0.46); ctx.stroke();
+  }
+  // pincer gripping the fish at the top
+  pincer(bx,by,wd);
+  // knuckle at the claw base
+  ctx.fillStyle=ORANGE; ctx.beginPath(); ctx.arc(ax,ay,wd*0.5,0,7); ctx.fill();
+}
+function pincer(x,y,wd){
+  ctx.strokeStyle=ORANGE; ctx.lineWidth=wd*0.55; ctx.lineCap="round";
+  ctx.beginPath(); ctx.arc(x,y,wd*0.7,Math.PI*0.95,Math.PI*1.75); ctx.stroke();   // upper prong
+  ctx.beginPath(); ctx.arc(x,y,wd*0.7,Math.PI*0.05,Math.PI*0.55); ctx.stroke();   // lower prong
+  ctx.fillStyle=ORANGE_L; ctx.beginPath(); ctx.arc(x,y,wd*0.28,0,7); ctx.fill();
+}
+function drawFish(cx,cy){
+  if(!IMG.fish) return;
+  let ang = -vf*0.06; ang=Math.max(-0.32,Math.min(0.32,ang));
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang);
+  ctx.drawImage(IMG.fish, -L.fish.w/2, -L.fish.h/2, L.fish.w, L.fish.h);
+  ctx.restore();
+}
+function cloud(x,y,r){
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,7); ctx.arc(x+r*0.9,y+r*0.2,r*0.8,0,7);
+  ctx.arc(x-r*0.9,y+r*0.2,r*0.7,0,7); ctx.arc(x+r*0.2,y-r*0.4,r*0.7,0,7);
+  ctx.fill();
+}
+function drawGauge(){
+  const x=W-16, y0=H*0.10, y1=H*0.74, h=y1-y0;
+  ctx.lineWidth=8; ctx.lineCap="round";
+  ctx.strokeStyle="rgba(255,255,255,.5)";
+  ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y1); ctx.stroke();
+  // current fill
+  ctx.strokeStyle="#ff6a3d";
+  ctx.beginPath(); ctx.moveTo(x,y1); ctx.lineTo(x,y1-h*Math.min(1,f)); ctx.stroke();
+  // best marker
+  if(best>0){ const by=y1-h*Math.min(1,best/100);
+    ctx.strokeStyle="#0e2a33"; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(x-7,by); ctx.lineTo(x+7,by); ctx.stroke(); }
+}
+
+/* ===========================================================================
+   Mortal-Kombat-style overlay: CRAB-vs-GRAVITY health bars, a round timer /
+   score disc, gold name plates, and big dramatic callouts.
+   =========================================================================== */
+function shout(text,dur,cols){ callout={text,born:timeS,dur,cols:cols||["#7a3b00","#ffd24d"]}; }
+function burst(x,y,color,n){ for(let i=0;i<n;i++){ const a=Math.random()*7, s=60+Math.random()*180;
+  particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-70,life:.9,max:.9,r:2+Math.random()*3,c:color,grav:140}); } }
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+// chunky beveled gold (or red) arcade text
+function mkText(txt,x,y,size,edge,bright){
+  ctx.save();
+  ctx.font="900 "+size+"px Impact,'Arial Black',sans-serif";
+  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.lineJoin="round";
+  const g=ctx.createLinearGradient(0,y-size*0.6,0,y+size*0.6);
+  g.addColorStop(0,bright); g.addColorStop(.55,edge); g.addColorStop(1,bright);
+  ctx.shadowColor="rgba(255,80,0,.85)"; ctx.shadowBlur=size*0.45;
+  ctx.lineWidth=Math.max(2,size*0.12); ctx.strokeStyle="#240a00"; ctx.strokeText(txt,x,y);
+  ctx.shadowBlur=0; ctx.fillStyle=g; ctx.fillText(txt,x,y);
+  ctx.restore();
+}
+function mkBar(x,y,w,h,val,side,cols){
+  rr(x-2,y-2,w+4,h+4,5); ctx.fillStyle="#0b0b0b"; ctx.fill();
+  ctx.lineWidth=2; ctx.strokeStyle="#e8b800"; ctx.stroke();
+  val=Math.max(0,Math.min(1,val));
+  ctx.save(); rr(x,y,w,h,3); ctx.clip();
+  ctx.fillStyle="#1a1208"; ctx.fillRect(x,y,w,h);            // empty track
+  const fw=w*val, fx=(side==="left")?x:x+w-fw;
+  const g=ctx.createLinearGradient(x,y,x,y+h); g.addColorStop(0,cols[0]); g.addColorStop(1,cols[1]);
+  ctx.fillStyle=g; ctx.fillRect(fx,y,fw,h);                   // health fill
+  ctx.fillStyle="rgba(0,0,0,.30)"; const seg=Math.max(8,w/12);
+  for(let sx=x+seg;sx<x+w;sx+=seg) ctx.fillRect(sx,y,2,h);    // segment ticks
+  ctx.restore();
+}
+function drawMKHud(){
+  const pad=12, top=12, barH=Math.max(12,W*0.05), discR=W*0.085, cx=W/2;
+  const vg=ctx.createLinearGradient(0,0,0,H*0.17);
+  vg.addColorStop(0,"rgba(0,0,0,.55)"); vg.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H*0.17);
+  const lx0=pad, lw=cx-discR-8-lx0, rx0=cx+discR+8, rw=W-pad-rx0;
+  mkBar(lx0,top,lw,barH,crabPow,"left",["#ffe14d","#7ed957"]);     // CRAB (you)
+  mkBar(rx0,top,rw,barH,Math.min(1,f),"right",["#ff9a3c","#c0392b"]); // GRAVITY (enemy)
+  mkText("CRAB",   lx0+lw/2, top+barH+13, Math.max(11,W*0.04), "#7a3b00","#ffd24d");
+  mkText("GRAVITY",rx0+rw/2, top+barH+13, Math.max(11,W*0.04), "#7a3b00","#ffd24d");
+  // round timer / score disc
+  const dcy=top+barH/2;
+  ctx.beginPath(); ctx.arc(cx,dcy,discR,0,7); ctx.fillStyle="#0b0b0b"; ctx.fill();
+  ctx.lineWidth=3; ctx.strokeStyle="#e8b800"; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,dcy,discR*0.78,0,7); ctx.lineWidth=1.5; ctx.strokeStyle="#7a5e00"; ctx.stroke();
+  mkText(String(Math.floor(f*100)), cx, dcy, discR*0.92, "#7a3b00","#ffd24d");
+}
+function drawCallout(){
+  if(!callout) return;
+  const age=timeS-callout.born;
+  if(age>callout.dur){ callout=null; return; }
+  const inP=Math.min(1,age/0.16);
+  const scale=inP<1 ? (0.5+0.55*inP+Math.sin(inP*Math.PI)*0.18) : 1;
+  const fade=age>callout.dur*0.65 ? Math.max(0,1-(age-callout.dur*0.65)/(callout.dur*0.35)) : 1;
+  ctx.save(); ctx.globalAlpha=fade; ctx.translate(W/2,H*0.40); ctx.scale(scale,scale);
+  mkText(callout.text, 0, 0, W*0.14, callout.cols[0], callout.cols[1]);
+  ctx.restore();
+}
+
+/* ===========================================================================
+   HUD + overlays
+   =========================================================================== */
+function updateHud(){ /* live values are drawn on the canvas MK HUD */ }
+function show(id){ document.getElementById(id).classList.remove("hidden"); }
+function hide(id){ document.getElementById(id).classList.add("hidden"); }
+
+/* ===========================================================================
+   Loop
+   =========================================================================== */
+function frame(t){
+  const dt=Math.min(0.05,(t-lastT)/1000||0); lastT=t;
+  update(dt); render();
+  requestAnimationFrame(frame);
+}
+
+/* ===========================================================================
+   Input
+   =========================================================================== */
+const frameEl=document.getElementById("frame");
+frameEl.addEventListener("pointerdown",(e)=>{ e.preventDefault(); tap(); }, {passive:false});
+window.addEventListener("keydown",(e)=>{
+  if(e.key==="m"||e.key==="M"){ muted=!muted; document.getElementById("muteBtn").textContent=muted?"🔇":"🔊"; return; }
+  if(e.code==="Space"||e.key==="ArrowUp"||e.key===" "){ e.preventDefault(); tap(); }
+});
+document.getElementById("startBtn").addEventListener("click",(e)=>{e.stopPropagation(); startGame();});
+document.getElementById("retryBtn").addEventListener("click",(e)=>{e.stopPropagation(); startGame();});
+document.getElementById("muteBtn").addEventListener("click",(e)=>{e.stopPropagation();
+  muted=!muted; document.getElementById("muteBtn").textContent=muted?"🔇":"🔊";});
+window.addEventListener("resize",fit);
+
+/* ===========================================================================
+   Boot — load assets, then run
+   =========================================================================== */
+function loadAssets(done){
+  const keys=Object.keys(ASSETS); let n=0;
+  keys.forEach(k=>{ const im=new Image();
+    im.onload =()=>{ IMG[k]=im; if(++n===keys.length) done(); };
+    im.onerror=()=>{ IMG[k]=null; if(++n===keys.length) done(); };
+    im.src=ASSETS[k]; });
+}
+loadAssets(()=>{
+  fit();
+  // a few drifting clouds high in the sky
+  clouds=[{x:W*0.25,y:H*0.12,r:26,vx:8},{x:W*0.7,y:H*0.2,r:34,vx:-6},{x:W*0.5,y:H*0.06,r:22,vx:5}];
+  document.getElementById("loading").style.display="none";
+  updateHud();
+  requestAnimationFrame(frame);
+});
+</script>
+</body>
+</html>

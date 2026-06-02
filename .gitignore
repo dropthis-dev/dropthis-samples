@@ -1,0 +1,11 @@
+# secrets / local env — never commit
+.env
+.env.*
+*.local
+.dropthis_secrets.env
+secrets/
+
+# os / editor / deps
+.DS_Store
+Thumbs.db
+node_modules/
