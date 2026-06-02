@@ -26,8 +26,7 @@
     margin: 0;
     padding: 0;
     height: 100%;
-    background:
-      radial-gradient(circle at 50% 0%, #1d0f4a 0%, var(--bg) 60%, #050211 100%);
+    background: #05030f;   /* flat backdrop — no gradients in the 8-bit era */
     color: var(--ink);
     font-family: "Courier New", Courier, monospace;
     /* chunky retro text: blocky, uppercase, slightly spaced */
@@ -88,20 +87,30 @@
     box-shadow: inset 0 0 0 2px #3a2a6e;
     color: var(--ink);
     font-family: inherit;
-    font-size: 16px;
+    font-size: 11px;
     cursor: pointer;
     padding: 0 10px;
   }
   #muteBtn:active { transform: translateY(1px); }
 
+  /* Lives shown as little pixel blocks (no emoji) */
+  .stat.lives b { line-height: 1; padding-top: 2px; }
+  .life {
+    display: inline-block;
+    width: 9px; height: 9px;
+    margin: 0 1px;
+    background: var(--accent);
+    box-shadow: inset 0 0 0 2px #0a5b34;
+    vertical-align: middle;
+  }
+  .nolife { font-style: normal; color: var(--danger); }
+
   /* ---------- Canvas / screen ---------- */
   #screen {
     position: relative;
     border: 4px solid #000;
-    box-shadow:
-      inset 0 0 0 3px #3a2a6e,
-      0 0 0 4px #000,
-      0 10px 30px rgba(0,0,0,0.6);
+    /* hard pixel border only — no soft drop shadow */
+    box-shadow: inset 0 0 0 3px #3a2a6e, 0 0 0 4px #000;
     background: #05030f;
     line-height: 0;
     overflow: hidden;
@@ -253,7 +262,7 @@
       <div class="stat">Score<b id="hudScore">0</b></div>
       <div class="stat">Time<b id="hudTime">0.0</b></div>
       <div class="stat">Best<b id="hudBest">0</b></div>
-      <button id="muteBtn" title="Mute / unmute (M)">🔊</button>
+      <button id="muteBtn" title="Mute / unmute (M)">SND</button>
     </div>
 
     <!-- Screen -->
@@ -325,31 +334,105 @@ ctx.imageSmoothingEnabled = false;
 //   safe  : nothing kills you here
 //   road  : touching an obstacle = death
 //   water : you must ride an obstacle, otherwise you drown
+// Short uppercase labels — bitmap font + tile budget, like real arcade text.
 const LANES = [
   { type: "safe",  kind: "portal" },                                                                 // 0  URL portal
-  { type: "road",  kind: "slop",     dir:-1, speed:135, gap:2.4, len:2, labels:["AI slop","GPT","LLM","hallucinate","slop"] }, // 1  AI slop storm
-  { type: "road",  kind: "slop",     dir: 1, speed:110, gap:2.8, len:1, labels:["blob","token","prompt","slop"] },            // 2  AI slop storm
-  { type: "road",  kind: "firewall", dir: 1, speed:95,  gap:3.0, len:2, labels:["403","🔒 deny","firewall","blocked"] },       // 3  firewall lane
-  { type: "water", kind: "dns",      dir:-1, speed:70,  gap:2.6, len:3, labels:["DNS?","CNAME","A record","TTL 86400"] },      // 4  DNS river
-  { type: "water", kind: "dns",      dir: 1, speed:55,  gap:2.8, len:2, labels:["MX","propagating…","NXDOMAIN","DNS?"] },      // 5  DNS river
-  { type: "water", kind: "dns",      dir:-1, speed:85,  gap:2.4, len:3, labels:["resolve","SOA","root NS","DNS?"] },           // 6  DNS river
+  { type: "road",  kind: "slop",     dir:-1, speed:135, gap:2.4, len:2, labels:["AI SLOP","HALLUC","LLM SPAM","SLOP"] },       // 1  AI slop storm
+  { type: "road",  kind: "slop",     dir: 1, speed:110, gap:2.8, len:1, labels:["GPT","LLM","BLOB","SLOP"] },                  // 2  AI slop storm
+  { type: "road",  kind: "firewall", dir: 1, speed:95,  gap:3.0, len:2, labels:["403","FIREWALL","BLOCKED","DENY"] },          // 3  firewall lane
+  { type: "water", kind: "dns",      dir:-1, speed:70,  gap:2.6, len:3, labels:["DNS?","CNAME","A RECORD","TTL 86400"] },      // 4  DNS river
+  { type: "water", kind: "dns",      dir: 1, speed:55,  gap:2.8, len:2, labels:["MX","NXDOMAIN","DNS?","SOA"] },               // 5  DNS river
+  { type: "water", kind: "dns",      dir:-1, speed:85,  gap:2.4, len:3, labels:["RESOLVE","ROOT NS","DNS?","SOA"] },           // 6  DNS river
   { type: "safe",  kind: "median" },                                                                 // 7  safe median (deploy preview)
-  { type: "road",  kind: "deploy",   dir: 1, speed:120, gap:2.6, len:2, labels:["build failed","deploy","CI/CD","npm err"] },  // 8  deploy lane
-  { type: "road",  kind: "config",   dir:-1, speed:90,  gap:2.8, len:2, labels:["config",".env","pkg.json","YAML"] },         // 9  config chaos
-  { type: "road",  kind: "github",   dir: 1, speed:75,  gap:3.0, len:2, labels:["repo","PR #42","git push","merge"] },        // 10 github traffic
-  { type: "road",  kind: "github",   dir:-1, speed:100, gap:2.6, len:1, labels:["fork","commit","rebase","conflict"] },       // 11 github traffic
+  { type: "road",  kind: "deploy",   dir: 1, speed:120, gap:2.6, len:2, labels:["BUILD FAIL","DEPLOY","CI/CD","NPM ERR"] },    // 8  deploy lane
+  { type: "road",  kind: "config",   dir:-1, speed:90,  gap:2.8, len:2, labels:["CONFIG",".ENV","PKG.JSON","YAML"] },          // 9  config chaos
+  { type: "road",  kind: "github",   dir: 1, speed:75,  gap:3.0, len:2, labels:["REPO","PR #42","GIT PUSH","MERGE"] },         // 10 github traffic
+  { type: "road",  kind: "github",   dir:-1, speed:100, gap:2.6, len:1, labels:["FORK","PUSH","DIFF","HEAD"] },                // 11 github traffic
   { type: "safe",  kind: "swamp" },                                                                  // 12 localhost swamp (start)
 ];
 
-// Per-kind palette for obstacles { body, top, text }
+// Per-kind palette for obstacles { body, top, text } — restricted NES-style colours.
 const KIND_STYLE = {
-  slop:     { body:"#c06bff", top:"#e3b6ff", text:"#1a0033" },
-  firewall: { body:"#ff5470", top:"#ffb3c1", text:"#330008" },
-  dns:      { body:"#7a5230", top:"#a9794a", text:"#fff3e0" }, // logs
-  deploy:   { body:"#ff9f43", top:"#ffd9a8", text:"#3a1d00" },
-  config:   { body:"#4dd2ff", top:"#b3edff", text:"#022a3a" },
-  github:   { body:"#3a3f55", top:"#6b7290", text:"#e9f7ff" },
+  slop:     { body:"#9878F8", top:"#C8B8F8", text:"#100020" },
+  firewall: { body:"#F83800", top:"#F87858", text:"#200000" },
+  dns:      { body:"#A44400", top:"#E45C10", text:"#FCE0A8" }, // logs
+  deploy:   { body:"#FC9838", top:"#FCE0A8", text:"#301400" },
+  config:   { body:"#0078F8", top:"#3CBCFC", text:"#FCFCFC" },
+  github:   { body:"#7C7C7C", top:"#BCBCBC", text:"#000000" },
 };
+
+// ---------- Bitmap font (5x7), drawn pixel-by-pixel so text is truly 8-bit ----------
+// Canvas fillText is anti-aliased; a hand-drawn font keeps every glyph crisp.
+const FONT_W = 5, FONT_H = 7;
+const FONT = {
+  "A":[".###.","#...#","#...#","#####","#...#","#...#","#...#"],
+  "B":["####.","#...#","#...#","####.","#...#","#...#","####."],
+  "C":[".####","#....","#....","#....","#....","#....",".####"],
+  "D":["####.","#...#","#...#","#...#","#...#","#...#","####."],
+  "E":["#####","#....","#....","####.","#....","#....","#####"],
+  "F":["#####","#....","#....","####.","#....","#....","#...."],
+  "G":[".####","#....","#....","#.###","#...#","#...#",".####"],
+  "H":["#...#","#...#","#...#","#####","#...#","#...#","#...#"],
+  "I":["#####","..#..","..#..","..#..","..#..","..#..","#####"],
+  "J":["..###","...#.","...#.","...#.","...#.","#..#.",".##.."],
+  "K":["#...#","#..#.","#.#..","##...","#.#..","#..#.","#...#"],
+  "L":["#....","#....","#....","#....","#....","#....","#####"],
+  "M":["#...#","##.##","#.#.#","#.#.#","#...#","#...#","#...#"],
+  "N":["#...#","##..#","#.#.#","#.#.#","#..##","#...#","#...#"],
+  "O":[".###.","#...#","#...#","#...#","#...#","#...#",".###."],
+  "P":["####.","#...#","#...#","####.","#....","#....","#...."],
+  "Q":[".###.","#...#","#...#","#...#","#.#.#","#..#.",".##.#"],
+  "R":["####.","#...#","#...#","####.","#.#..","#..#.","#...#"],
+  "S":[".####","#....","#....",".###.","....#","....#","####."],
+  "T":["#####","..#..","..#..","..#..","..#..","..#..","..#.."],
+  "U":["#...#","#...#","#...#","#...#","#...#","#...#",".###."],
+  "V":["#...#","#...#","#...#","#...#","#...#",".#.#.","..#.."],
+  "W":["#...#","#...#","#...#","#.#.#","#.#.#","##.##","#...#"],
+  "X":["#...#","#...#",".#.#.","..#..",".#.#.","#...#","#...#"],
+  "Y":["#...#","#...#",".#.#.","..#..","..#..","..#..","..#.."],
+  "Z":["#####","....#","...#.","..#..",".#...","#....","#####"],
+  "0":[".###.","#...#","#..##","#.#.#","##..#","#...#",".###."],
+  "1":["..#..",".##..","..#..","..#..","..#..","..#..",".###."],
+  "2":[".###.","#...#","....#","..##.",".#...","#....","#####"],
+  "3":["####.","....#","....#",".###.","....#","....#","####."],
+  "4":["#..#.","#..#.","#..#.","#####","...#.","...#.","...#."],
+  "5":["#####","#....","#....","####.","....#","....#","####."],
+  "6":[".###.","#....","#....","####.","#...#","#...#",".###."],
+  "7":["#####","....#","...#.","..#..",".#...",".#...",".#..."],
+  "8":[".###.","#...#","#...#",".###.","#...#","#...#",".###."],
+  "9":[".###.","#...#","#...#",".####","....#","....#",".###."],
+  " ":[".....",".....",".....",".....",".....",".....","....."],
+  "?":[".###.","#...#","....#","..##.","..#..",".....","..#.."],
+  ".":[".....",".....",".....",".....",".....",".....","..#.."],
+  "#":[".#.#.",".#.#.","#####",".#.#.","#####",".#.#.",".#.#."],
+  "/":["....#","....#","...#.","..#..",".#...","#....","#...."],
+  "-":[".....",".....",".....","#####",".....",".....","....."],
+  "!":["..#..","..#..","..#..","..#..","..#..",".....","..#.."],
+  ":":[".....","..#..","..#..",".....","..#..","..#..","....."],
+};
+// Pixel width of a string at a given scale (5px glyph + 1px gap).
+function textWidth(str, scale) {
+  return str.length ? (str.length * (FONT_W + 1) - 1) * scale : 0;
+}
+// Draw a string with the bitmap font. align: left|center|right.
+function pixelText(str, x, y, scale, color, align = "center") {
+  str = String(str).toUpperCase();
+  const w = textWidth(str, scale);
+  let sx = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
+  let sy = y - (FONT_H * scale) / 2;             // vertically centred on y
+  sx = Math.round(sx); sy = Math.round(sy);
+  ctx.fillStyle = color;
+  for (let i = 0; i < str.length; i++) {
+    const g = FONT[str[i]] || FONT[" "];
+    const gx = sx + i * (FONT_W + 1) * scale;
+    for (let r = 0; r < FONT_H; r++) {
+      const row = g[r];
+      for (let c = 0; c < FONT_W; c++) {
+        if (row[c] === "#") ctx.fillRect(gx + c * scale, sy + r * scale, scale, scale);
+      }
+    }
+  }
+}
 
 // ---------- Game state ----------
 const STATE = { TITLE:"title", PLAYING:"playing", OVER:"over", WIN:"win" };
@@ -359,6 +442,7 @@ let lanes = [];        // runtime lane objects with obstacle arrays
 let frog;              // { col, row, px, py, onLog, hop }
 let lives, score, furthest, startTime, elapsed, shake;
 let particles = [];
+let tick = 0;          // global frame counter, drives blink/ripple animations
 let best = parseInt(localStorage.getItem("publishfrog_best") || "0", 10);
 
 // ---------- Audio (Web Audio API only) ----------
@@ -479,7 +563,7 @@ function loseLife(reason) {
   sHit();
   shake = 12;
   // a little burst of "dead pixels" where the frog was
-  spawnParticles(frog.px + TILE/2, frog.py + TILE/2, "#ff5470", 14);
+  spawnParticles(frog.px + TILE/2, frog.py + TILE/2, "#F83800", 8);
   lives--;
   updateHud();
   if (lives <= 0) {
@@ -508,7 +592,7 @@ function win() {
   updateHud();
   sWin();
   // confetti burst from the portal
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 28; i++) {
     spawnParticles(W/2, TILE/2, pickConfetti(), 1, true);
   }
   document.getElementById("winScore").textContent =
@@ -518,7 +602,7 @@ function win() {
 
 // ---------- Particles (hit dust + win confetti) ----------
 function pickConfetti() {
-  const c = ["#5cff9d","#ffe14d","#4dd2ff","#ff5470","#c06bff"];
+  const c = ["#58D854","#F8B800","#3CBCFC","#F83800","#9878F8"];
   return c[(particles.length + Math.floor(elapsed*7)) % c.length];
 }
 function spawnParticles(x, y, color, n, confetti = false) {
@@ -635,13 +719,12 @@ function render() {
   // frog
   drawFrog();
 
-  // particles
+  // particles (flat pixels; flicker out instead of fading via alpha)
   for (const p of particles) {
-    ctx.globalAlpha = Math.max(0, p.life / p.max);
+    if (p.life < 0.3 && (tick % 4) < 2) continue;   // 8-bit death flicker
     ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+    ctx.fillRect(Math.round(p.x - p.size/2), Math.round(p.y - p.size/2), p.size, p.size);
   }
-  ctx.globalAlpha = 1;
 
   ctx.restore();
 }
@@ -650,38 +733,37 @@ function drawLaneBackground(lane, r) {
   const y = r * TILE;
   let c1, c2;
   switch (lane.kind) {
-    case "portal": c1 = "#0a1f3a"; c2 = "#0a1f3a"; break;
-    case "swamp":  c1 = "#0c3b2e"; c2 = "#0f4a3a"; break;   // safe green swamp
-    case "median": c1 = "#16324a"; c2 = "#1b3b57"; break;   // safe blue median
-    case "dns":    c1 = "#0a3b66"; c2 = "#0d4a80"; break;   // water blue
-    case "github": c1 = "#1c1b2e"; c2 = "#232238"; break;   // dark road
-    case "config": c1 = "#241a3a"; c2 = "#2b2046"; break;
-    case "deploy": c1 = "#2a1c3a"; c2 = "#321f44"; break;
-    case "firewall": c1 = "#3a1622"; c2 = "#451826"; break;
-    case "slop":   c1 = "#2a123a"; c2 = "#311544"; break;
-    default:       c1 = "#16122a"; c2 = "#1a1530";
+    case "portal":   c1 = "#0000A8"; c2 = "#0000A8"; break;
+    case "swamp":    c1 = "#004800"; c2 = "#006000"; break;   // safe swamp
+    case "median":   c1 = "#002858"; c2 = "#003870"; break;   // safe median
+    case "dns":      c1 = "#0000A8"; c2 = "#0010C0"; break;   // water
+    case "github":   c1 = "#1c1c1c"; c2 = "#2c2c2c"; break;   // road
+    case "config":   c1 = "#181840"; c2 = "#202850"; break;
+    case "deploy":   c1 = "#2c1800"; c2 = "#3a2200"; break;
+    case "firewall": c1 = "#300008"; c2 = "#400810"; break;
+    case "slop":     c1 = "#200030"; c2 = "#2c0040"; break;
+    default:         c1 = "#101020"; c2 = "#181830";
   }
-  // checker the row a touch for retro texture
+  // two-tone tile checker — flat colours, hard edges
   for (let cx = 0; cx < COLS; cx++) {
     ctx.fillStyle = (cx % 2 === 0) ? c1 : c2;
     ctx.fillRect(cx * TILE, y, TILE, TILE);
   }
-  // gentle water shimmer lines
+  // 2-frame water ripple (flat NES-style animation, no alpha)
   if (lane.type === "water") {
-    ctx.fillStyle = "rgba(255,255,255,0.06)";
-    for (let cx = 0; cx < COLS; cx++) ctx.fillRect(cx*TILE, y + TILE - 6, TILE, 2);
+    const phase = Math.floor(tick / 16) % 2;
+    ctx.fillStyle = "#1038C0";
+    for (let cx = 0; cx < COLS; cx++) {
+      if ((cx + phase) % 2 === 0) ctx.fillRect(cx * TILE, y + TILE - 6, TILE, 3);
+    }
   }
-  // safe lane label
-  if (lane.kind === "swamp") laneText("localhost swamp — safe", y);
-  if (lane.kind === "median") laneText("deploy preview — safe", y);
+  // safe-lane labels
+  if (lane.kind === "swamp")  laneText("LOCALHOST SWAMP", y);
+  if (lane.kind === "median") laneText("DEPLOY PREVIEW", y);
 }
 
 function laneText(txt, y) {
-  ctx.fillStyle = "rgba(255,255,255,0.35)";
-  ctx.font = "9px 'Courier New', monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(txt.toUpperCase(), W/2, y + TILE/2);
+  pixelText(txt, W / 2, y + TILE / 2, 1, "#BCBCBC");
 }
 
 function drawObstacle(lane, o, r) {
@@ -707,50 +789,42 @@ function drawObstacle(lane, o, r) {
     ctx.fillRect(x + 4, y + TILE - pad - 4, 6, 4);
     ctx.fillRect(x + w - 10, y + TILE - pad - 4, 6, 4);
   } else {
-    // log wood grain notches
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    // log wood-grain notches (flat dark, hard edges)
+    ctx.fillStyle = "#5c2800";
     for (let i = TILE; i < w; i += TILE) ctx.fillRect(x + i, y + pad + 6, 2, h - 10);
   }
 
-  // label
-  ctx.fillStyle = st.text;
-  ctx.font = "bold 10px 'Courier New', monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(o.label.toUpperCase(), x + w/2, y + TILE/2 + 1);
+  // label (bitmap font)
+  pixelText(o.label, x + w / 2, y + TILE / 2, 1, st.text);
 }
 
-// Blinking, glowing URL portal across the top row.
-let portalBlink = 0;
+// URL portal across the top row — hard on/off blink (no alpha glow).
 function drawPortal() {
-  portalBlink += 0.05;
   const y = 0;
-  const glow = 0.5 + 0.5 * Math.sin(portalBlink);
+  const on = Math.floor(tick / 18) % 2 === 0;
   // base
-  ctx.fillStyle = "#06243f";
+  ctx.fillStyle = "#0000A8";
   ctx.fillRect(0, y, W, TILE);
-  // pulsing arch slots — the "URL bar"
-  const barX = TILE, barW = W - TILE*2;
-  ctx.fillStyle = `rgba(77,210,255,${0.25 + glow*0.5})`;
+  // the "URL bar" — swaps between two flat colours when it blinks
+  const barX = TILE, barW = W - TILE * 2;
+  ctx.fillStyle = on ? "#3CBCFC" : "#0078F8";
   ctx.fillRect(barX, y + 8, barW, TILE - 16);
-  ctx.strokeStyle = "#4dd2ff";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(barX, y + 8, barW, TILE - 16);
-  // sparkle dots
-  ctx.fillStyle = `rgba(255,255,255,${0.4 + glow*0.6})`;
-  for (let i = 0; i < COLS; i++) {
-    if ((i + Math.floor(portalBlink)) % 2 === 0)
-      ctx.fillRect(i*TILE + TILE/2 - 1, y + TILE/2 - 1, 2, 2);
+  // hard 2px black border drawn as rects (crisp, not strokeRect)
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(barX, y + 8, barW, 2);
+  ctx.fillRect(barX, y + TILE - 10, barW, 2);
+  ctx.fillRect(barX, y + 8, 2, TILE - 16);
+  ctx.fillRect(barX + barW - 2, y + 8, 2, TILE - 16);
+  // marquee lights along the top, only lit on the "on" frame
+  if (on) {
+    ctx.fillStyle = "#FCFCFC";
+    for (let i = 1; i < COLS - 1; i++) ctx.fillRect(i * TILE + TILE / 2 - 1, y + 3, 2, 2);
   }
   // label
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 11px 'Courier New', monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("https://dropthis.app/your-drop", W/2, y + TILE/2);
+  pixelText("DROPTHIS.APP", W / 2, y + TILE / 2, 2, "#06122a");
 }
 
-// 8x8 pixel frog sprite (facing up). One char = one pixel block.
+// 8x8 pixel frog sprites (facing up). One char = one pixel block.
 //  G dark green   g light green   w eye-white   k pupil   p the AI file/page
 const FROG = [
   ".G....G.",
@@ -762,38 +836,41 @@ const FROG = [
   "GggggggG",
   "G.gggg.G",
 ];
-const FROG_COLORS = { G:"#1f8a3b", g:"#5cff9d", w:"#ffffff", k:"#06140a", p:"#fff6c2" };
+// mid-hop frame: legs splayed out (the classic 2-frame Frogger leap)
+const FROG_JUMP = [
+  "G......G",
+  ".gw..wg.",
+  ".gkggkg.",
+  "..gggg..",
+  "..gppg..",
+  "..gggg..",
+  ".g.gg.g.",
+  "G......G",
+];
+const FROG_COLORS = { G:"#007800", g:"#58D854", w:"#FCFCFC", k:"#001400", p:"#FCE0A8" };
 
 function drawFrog() {
-  const px = frog.px, py = frog.py;
-  // hop squash: when hop>0 the frog is mid-jump, draw slightly smaller + lifted
-  const hop = frog.hop;
-  const lift = Math.sin(hop * Math.PI) * 6;          // up arc
-  const squash = 1 - Math.sin(hop * Math.PI) * 0.12;
+  const jumping = frog.hop > 0;
+  const lift = jumping ? 5 : 0;            // discrete hop — integer pixels only
+  const cell = 4;                          // 4px blocks -> 32px sprite, pixel-perfect
+  const size = cell * 8;
+  const ox = Math.round(frog.px + (TILE - size) / 2);
+  const oy = Math.round(frog.py + (TILE - size) / 2 - lift);
 
-  const cell = TILE / 8;
-  const size = cell * squash;
-  const w = size * 8;
-  const ox = px + (TILE - w) / 2;
-  const oy = py + (TILE - w) / 2 - lift;
-
-  // shadow
-  ctx.fillStyle = "rgba(0,0,0,0.35)";
-  ctx.fillRect(px + 6, py + TILE - 8 + lift*0.3, TILE - 12, 5);
-
-  // rotate sprite to face movement direction
+  // rotate sprite to face movement direction (90° steps stay pixel-exact)
   ctx.save();
-  ctx.translate(ox + w/2, oy + w/2);
+  ctx.translate(ox + size / 2, oy + size / 2);
   const rot = { up:0, right:Math.PI/2, down:Math.PI, left:-Math.PI/2 }[frog.facing] || 0;
   ctx.rotate(rot);
-  ctx.translate(-w/2, -w/2);
+  ctx.translate(-size / 2, -size / 2);
 
+  const sprite = jumping ? FROG_JUMP : FROG;
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
-      const ch = FROG[r][c];
-      if (ch === "." ) continue;
-      ctx.fillStyle = FROG_COLORS[ch] || "#5cff9d";
-      ctx.fillRect(Math.floor(c*size), Math.floor(r*size), Math.ceil(size), Math.ceil(size));
+      const ch = sprite[r][c];
+      if (ch === ".") continue;
+      ctx.fillStyle = FROG_COLORS[ch] || "#58D854";
+      ctx.fillRect(c * cell, r * cell, cell, cell);
     }
   }
   ctx.restore();
@@ -803,7 +880,9 @@ function drawFrog() {
 //  HUD + overlays
 // ===========================================================================
 function updateHud() {
-  document.getElementById("hudLives").textContent = "♥".repeat(Math.max(0,lives)) || "—";
+  const n = Math.max(0, lives);
+  document.getElementById("hudLives").innerHTML =
+    n > 0 ? '<i class="life"></i>'.repeat(n) : '<i class="nolife">0</i>';
   document.getElementById("hudScore").textContent = score;
   document.getElementById("hudTime").textContent = elapsed.toFixed(1);
   document.getElementById("hudBest").textContent = best;
@@ -822,6 +901,7 @@ function hideOverlays() {
 function frame(t) {
   const dt = Math.min(0.05, (t - lastT) / 1000 || 0);  // clamp for tab-switch jumps
   lastT = t;
+  tick++;
   update(dt);
   render();
   requestAnimationFrame(frame);
@@ -880,7 +960,7 @@ function quickRestart() {
 }
 function toggleMute() {
   muted = !muted;
-  document.getElementById("muteBtn").textContent = muted ? "🔇" : "🔊";
+  document.getElementById("muteBtn").textContent = muted ? "MUTE" : "SND";
 }
 
 // ===========================================================================
