@@ -12,6 +12,7 @@ runnable artifact plus the exact prompt used to generate it.
 | --- | --- |
 | [`frogger/`](./frogger) | **Publish Frog** — an 8-bit Frogger parody about the pain of getting an AI-generated file online. Single HTML file, no dependencies. |
 | [`triumphant-crab/`](./triumphant-crab) | **Triumphant Crab** — tap like crazy to extend a crab's claws and lift a fish skyward as gravity fights back, with a Mortal Kombat-style UI. AI-generated art (Nano Banana 2 / Gemini 3 Pro Image) + procedural telescoping claws. |
+| [`marclou-deck/`](./marclou-deck) | **Ship Fast or Die** — a keyboard-driven, autoplaying HTML slide deck on Marc Lou's $87,507 month, where each slide recreates one of his products' real brand. Single file + one image. |
 
 ## Layout
 

@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ship Fast or Die — The Marc Lou Empire · May 2026</title>
+<meta name="description" content="A keyboard-driven slide deck walking through Marc Lou's product portfolio and $87,507 month — built for dropthis." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================================================
+   SHIP FAST OR DIE — a self-contained HTML slide deck
+   Each product slide morphs to that product's real brand.
+   No build step. Arrow keys / space / swipe to navigate.
+   ============================================================ */
+
+:root{
+  /* deck chrome (treasure / founder vibe) */
+  --bg:        #0b0a08;
+  --bg-2:      #14110b;
+  --ink:       #fbf4e2;
+  --muted:     #9a9079;
+  --gold:      #ffc857;            /* MRR = treasure */
+  --gold-deep: #f0a92b;
+  --line:      rgba(255,255,255,.10);
+
+  /* per-slide brand variables (overridden by .theme-* classes) */
+  --brand:     var(--gold);
+  --brand-2:   var(--gold-deep);
+  --brand-ink: var(--ink);
+  --brand-bg:  var(--bg);
+  --brand-bg2: var(--bg-2);
+  --brand-font: "Bricolage Grotesque", system-ui, sans-serif;
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+
+html,body{ height:100%; }
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Hanken Grotesk", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+
+/* number / mono accents */
+.mono{ font-family:"JetBrains Mono", ui-monospace, monospace; }
+
+/* ---------- stage & slides ---------- */
+#deck{ position:fixed; inset:0; }
+
+.slide{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:clamp(28px, 5vw, 80px);
+  background:
+    radial-gradient(120% 120% at 50% -10%, var(--brand-bg2), var(--brand-bg) 60%);
+  color:var(--brand-ink);
+  opacity:0; visibility:hidden;
+  transform:scale(.985);
+  transition:opacity .55s ease, transform .55s cubic-bezier(.2,.8,.2,1), visibility 0s linear .55s;
+  will-change:opacity, transform;
+}
+.slide.is-active{
+  opacity:1; visibility:visible; transform:none;
+  transition:opacity .55s ease, transform .7s cubic-bezier(.2,.8,.2,1), visibility 0s;
+  z-index:2;
+}
+
+/* shared content wrapper keeps everything readable & centred */
+.wrap{ width:min(1100px, 100%); }
+
+/* ---------- staggered reveals ---------- */
+[data-reveal]{
+  opacity:0; transform:translateY(22px);
+  transition:opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1);
+  transition-delay:calc(var(--i, 0) * 90ms + 120ms);
+}
+.is-active [data-reveal]{ opacity:1; transform:none; }
+
+/* ---------- type scale ---------- */
+.eyebrow{
+  font-family:"JetBrains Mono", monospace;
+  text-transform:uppercase; letter-spacing:.28em;
+  font-size:clamp(11px,1.1vw,13px); font-weight:500;
+  color:var(--brand);
+}
+h1.title{
+  font-family:var(--brand-font);
+  font-weight:800; line-height:.95;
+  font-size:clamp(40px, 8vw, 104px);
+  letter-spacing:-.02em;
+}
+h2.headline{
+  font-family:var(--brand-font);
+  font-weight:800; line-height:1.0;
+  font-size:clamp(34px, 5.4vw, 68px);
+  letter-spacing:-.02em;
+}
+.lead{
+  font-size:clamp(16px,1.7vw,21px);
+  line-height:1.5; color:var(--muted);
+  max-width:46ch;
+}
+.brand-ink .lead{ color:color-mix(in srgb, var(--brand-ink) 72%, transparent); }
+
+/* ---------- MRR badge (the hero metric) ---------- */
+.mrr{
+  display:inline-flex; align-items:baseline; gap:.5ch;
+  font-family:"JetBrains Mono", monospace; font-weight:800;
+  color:var(--brand);
+}
+.mrr .amt{ font-size:clamp(22px,2.6vw,34px); }
+.mrr .per{ font-size:.55em; opacity:.7; font-weight:500; letter-spacing:.05em; }
+.mrr-pill{
+  display:inline-flex; align-items:center; gap:.6em;
+  padding:.5em 1em; border-radius:999px;
+  background:color-mix(in srgb, var(--brand) 14%, transparent);
+  border:1px solid color-mix(in srgb, var(--brand) 35%, transparent);
+  font-family:"JetBrains Mono", monospace; font-weight:700;
+  font-size:clamp(13px,1.3vw,15px); color:var(--brand);
+}
+
+/* ============================================================
+   COVER
+   ============================================================ */
+#cover{ overflow:hidden; }
+#cover .coins{ position:absolute; inset:0; pointer-events:none; z-index:0; }
+#cover .coin{
+  position:absolute; top:-8%;
+  font-size:clamp(14px,2vw,26px);
+  animation:fall linear infinite;
+  opacity:.0;
+}
+@keyframes fall{
+  0%{ transform:translateY(-10vh) rotate(0deg); opacity:0; }
+  8%{ opacity:.8; }
+  92%{ opacity:.8; }
+  100%{ transform:translateY(115vh) rotate(420deg); opacity:0; }
+}
+#cover .wrap{ position:relative; z-index:1; text-align:center; }
+.cover-avatar{
+  width:clamp(82px,11vw,120px); height:clamp(82px,11vw,120px);
+  border-radius:50%; object-fit:cover;
+  border:3px solid var(--gold);
+  box-shadow:0 0 0 6px rgba(255,200,87,.12), 0 18px 60px rgba(0,0,0,.6);
+  margin-bottom:26px;
+}
+.bignum{
+  font-family:"JetBrains Mono", monospace; font-weight:800;
+  font-size:clamp(56px, 13vw, 168px); line-height:.9;
+  letter-spacing:-.03em;
+  background:linear-gradient(180deg, #fff3d0, var(--gold) 55%, var(--gold-deep));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 0 60px rgba(255,200,87,.25);
+}
+.cover-sub{ margin-top:14px; font-size:clamp(15px,1.8vw,22px); color:var(--muted); }
+.cover-sub b{ color:var(--ink); font-weight:700; }
+
+/* ============================================================
+   X / TWITTER CARD (recreates the source tweet in CSS)
+   ============================================================ */
+.theme-x{
+  --brand:#1d9bf0; --brand-2:#1a8cd8;
+  --brand-bg:#000000; --brand-bg2:#0a0a0a; --brand-ink:#e7e9ea;
+  --brand-font:"Hanken Grotesk", sans-serif;
+}
+.xcard{
+  width:min(560px,100%); margin-inline:auto; text-align:left;
+  background:#000; border:1px solid #2f3336; border-radius:18px;
+  padding:18px 20px; font-family:"Hanken Grotesk", sans-serif;
+  box-shadow:0 30px 80px rgba(0,0,0,.55);
+}
+.xhead{ display:flex; align-items:center; gap:11px; }
+.xhead img{ width:46px; height:46px; border-radius:50%; }
+.xname{ font-weight:800; color:#e7e9ea; display:flex; align-items:center; gap:5px; font-size:15px; }
+.xverify{ width:17px; height:17px; }
+.xhandle{ color:#71767b; font-size:14px; text-decoration:none; position:relative; z-index:60; }
+.xhandle:hover{ text-decoration:underline; }
+.xsub{
+  margin-left:auto; background:#eff3f4; color:#0f1419;
+  font-weight:800; font-size:14px; border-radius:999px; padding:7px 15px;
+  text-decoration:none; cursor:pointer; position:relative; z-index:60;
+  transition:background .15s;
+}
+.xsub:hover{ background:#d7dbdc; }
+.xbody{ margin-top:14px; color:#e7e9ea; font-size:16px; line-height:1.5; }
+.xlist{ list-style:none; margin:12px 0; }
+.xlist li{
+  display:flex; align-items:center; gap:9px; padding:3px 0; font-size:15.5px;
+}
+.xlist .nm{ color:#e7e9ea; }
+.xlist .amt{ margin-left:auto; font-family:"JetBrains Mono",monospace; color:#71767b; font-weight:700; }
+.xlist li.real .amt{ color:#1d9bf0; }
+.xfoot{ color:#e7e9ea; font-size:16px; margin-top:6px; }
+
+/* ============================================================
+   PRODUCT SLIDE SCAFFOLD (brand-themed, two-column)
+   ============================================================ */
+.product .wrap{
+  display:grid; grid-template-columns:1.05fr 1fr;
+  gap:clamp(28px,4vw,64px); align-items:center;
+}
+.p-copy{ display:flex; flex-direction:column; gap:18px; }
+.p-logo{ display:flex; align-items:center; gap:.5em; font-family:var(--brand-font); font-weight:800; font-size:clamp(24px,2.6vw,34px); letter-spacing:-.02em; }
+.p-logo .ic{ font-size:1.1em; }
+.p-tag{ font-size:clamp(15px,1.6vw,19px); color:var(--muted); line-height:1.5; max-width:42ch; }
+.brand-ink .p-tag{ color:color-mix(in srgb, var(--brand-ink) 72%, transparent); }
+.p-meta{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:4px; }
+.chip{
+  font-family:"JetBrains Mono",monospace; font-size:12px; font-weight:600;
+  padding:.45em .8em; border-radius:8px;
+  border:1px solid var(--line); color:var(--muted);
+}
+
+/* faux browser frame that holds each product's recreated UI */
+.mock{
+  border-radius:16px; overflow:hidden;
+  border:1px solid color-mix(in srgb, var(--brand-ink) 14%, transparent);
+  background:var(--brand-bg2);
+  box-shadow:0 30px 90px rgba(0,0,0,.5);
+}
+.mock .bar{
+  display:flex; align-items:center; gap:6px;
+  padding:11px 14px; background:color-mix(in srgb, var(--brand-ink) 6%, transparent);
+  border-bottom:1px solid color-mix(in srgb, var(--brand-ink) 10%, transparent);
+}
+.mock .dot{ width:11px; height:11px; border-radius:50%; background:color-mix(in srgb, var(--brand-ink) 22%, transparent); }
+.mock .url{
+  margin-left:10px; font-family:"JetBrains Mono",monospace; font-size:12px;
+  color:color-mix(in srgb, var(--brand-ink) 55%, transparent);
+}
+.mock .screen{ padding:clamp(20px,2.4vw,30px); }
+
+.p-head{ font-family:var(--brand-font); font-weight:800; line-height:1.02; letter-spacing:-.02em; font-size:clamp(26px,3.6vw,48px); color:var(--brand-ink); }
+.p-head em{ font-style:normal; color:var(--brand); }
+.rank{ color:var(--brand); }
+.brand-ink .chip{ color:color-mix(in srgb,var(--brand-ink) 60%, transparent); border-color:color-mix(in srgb,var(--brand-ink) 18%, transparent); }
+.brand-ink .lead, .brand-ink .p-tag{ color:color-mix(in srgb, var(--brand-ink) 70%, transparent); }
+
+/* mini-UI atoms reused inside .mock screens */
+.row{ display:flex; align-items:center; gap:10px; }
+.btn{ font-family:var(--brand-font); font-weight:800; border-radius:12px; padding:.7em 1.1em; background:var(--brand); color:#0a0a0a; font-size:14px; display:inline-block; }
+.btn.dark{ color:#fff; }
+.tick{ width:18px;height:18px;border-radius:50%;background:#16a34a;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800; flex:0 0 auto; }
+.tag-sm{ font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;padding:.25em .6em;border-radius:6px;background:color-mix(in srgb,var(--brand) 16%,transparent);color:var(--brand); }
+.statbig{ font-family:"JetBrains Mono",monospace;font-weight:800;font-size:clamp(30px,4vw,52px);line-height:1;color:var(--brand); }
+.subtle{ color:color-mix(in srgb,var(--brand-ink) 55%,transparent); font-size:13px; }
+
+/* ===== per-product brand themes (light unless noted) ===== */
+.theme-trustmrr  { --brand:#14b8a6; --brand-2:#0d9488; --brand-bg:#ffffff; --brand-bg2:#f1fbfa; --brand-ink:#0f2a2a; --brand-font:"Hanken Grotesk",sans-serif; }
+.theme-datafast  { --brand:#7c3aed; --brand-2:#6d28d9; --brand-bg:#ffffff; --brand-bg2:#f6f3ff; --brand-ink:#1e1b3a; --brand-font:"Bricolage Grotesque",sans-serif; }
+.theme-shipordie { --brand:#dc2626; --brand-2:#f59e0b; --brand-bg:#0a0a0c; --brand-bg2:#140a0a; --brand-ink:#f5e9d6; --brand-font:"Bricolage Grotesque",sans-serif; }  /* dark + pirate */
+.theme-codefast  { --brand:#facc15; --brand-2:#eab308; --brand-bg:#0c0f17; --brand-bg2:#141a26; --brand-ink:#eef2f8; --brand-font:"Bricolage Grotesque",sans-serif; }  /* dark hero */
+.theme-shipfast  { --brand:#ffbe1a; --brand-2:#1a1a1a; --brand-bg:#ffffff; --brand-bg2:#fff8e6; --brand-ink:#15130c; --brand-font:"Bricolage Grotesque",sans-serif; }
+.theme-supershrimp{ --brand:#06b6d4; --brand-2:#fb7185; --brand-bg:#ffffff; --brand-bg2:#eefbff; --brand-ink:#0c2a33; --brand-font:"Hanken Grotesk",sans-serif; }
+.theme-indiepage { --brand:#2563eb; --brand-2:#3b82f6; --brand-bg:#ffffff; --brand-bg2:#f3f6ff; --brand-ink:#13213f; --brand-font:"Bricolage Grotesque",sans-serif; }
+.theme-byedispute{ --brand:#14b8a6; --brand-2:#22c55e; --brand-bg:#ffffff; --brand-bg2:#f0fbf8; --brand-ink:#0f2a26; --brand-font:"Hanken Grotesk",sans-serif; }
+.theme-habits    { --brand:#22c55e; --brand-2:#f59e0b; --brand-bg:#f4fbf0; --brand-bg2:#eaf7e1; --brand-ink:#14321b; --brand-font:"Hanken Grotesk",sans-serif; }
+.theme-bioage    { --brand:#2563eb; --brand-2:#06b6d4; --brand-bg:#ffffff; --brand-bg2:#f2f6ff; --brand-ink:#10203f; --brand-font:"Bricolage Grotesque",sans-serif; }
+.theme-workbook  { --brand:#0d1927; --brand-2:#2563eb; --brand-bg:#ffffff; --brand-bg2:#f4f6fa; --brand-ink:#0d1927; --brand-font:"Bricolage Grotesque",sans-serif; }
+.theme-poopup    { --brand:#f5b400; --brand-2:#b45309; --brand-bg:#ffffff; --brand-bg2:#fff7e0; --brand-ink:#2a1c05; --brand-font:"Hanken Grotesk",sans-serif; }
+
+/* signature micro-animations (cheap, always-on) */
+@keyframes spin{ to{ transform:rotate(360deg); } }
+@keyframes floaty{ 50%{ transform:translateY(-7px); } }
+@keyframes blink{ 50%{ opacity:.25; } }
+@keyframes breathe{ 50%{ transform:scale(1.04); box-shadow:0 0 0 8px color-mix(in srgb,var(--brand) 14%,transparent); } }
+@keyframes grow{ from{ transform:scaleY(0); } to{ transform:scaleY(1); } }
+.is-active .anim-spin{ animation:spin 14s linear infinite; }
+.is-active .anim-float{ animation:floaty 3.4s ease-in-out infinite; }
+.is-active .anim-blink{ animation:blink 1.4s steps(2) infinite; }
+.is-active .anim-breathe{ animation:breathe 2.6s ease-in-out infinite; }
+.globe{ width:118px;height:118px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #c4b5fd, #7c3aed 45%, #2e1065 90%);
+  position:relative; overflow:hidden;
+  box-shadow:0 0 50px rgba(124,58,237,.6), inset -10px -10px 30px rgba(0,0,0,.5); }
+.globe::before{ content:""; position:absolute; inset:-20%;
+  background:repeating-linear-gradient(90deg, transparent 0 16px, rgba(255,255,255,.18) 16px 17px),
+            repeating-linear-gradient(0deg, transparent 0 16px, rgba(255,255,255,.14) 16px 17px);
+  border-radius:50%; }
+.meter{ height:10px;border-radius:999px;background:color-mix(in srgb,var(--brand-ink) 10%,transparent);overflow:hidden; }
+.meter i{ display:block;height:100%;border-radius:999px;background:var(--brand); }
+
+/* MRR leaderboard slide */
+.lb{ width:min(820px,100%); margin-inline:auto; display:flex; flex-direction:column; gap:clamp(8px,1.4vh,14px); }
+.lb-row{ display:grid; grid-template-columns:1.6em 10em 1fr auto; align-items:center; gap:14px; }
+.lb-row .nm{ font-weight:700; color:var(--ink); white-space:nowrap; }
+.lb-track{ height:14px; border-radius:999px; background:rgba(255,255,255,.06); overflow:hidden; }
+.lb-fill{ display:block; height:100%; width:0; border-radius:999px;
+  background:linear-gradient(90deg,var(--gold-deep),var(--gold));
+  box-shadow:0 0 14px rgba(255,200,87,.35);
+  transition:width 1.1s cubic-bezier(.2,.8,.2,1); transition-delay:calc(var(--i) * 70ms); }
+.lb-row .v{ font-family:"JetBrains Mono",monospace; font-weight:800; color:var(--gold); min-width:4.2em; text-align:right; }
+.lb-row .em{ font-size:1.1em; text-align:center; }
+
+/* ============================================================
+   CLOSING — animated ship-fast quotes
+   ============================================================ */
+#closing{ --brand:var(--gold); text-align:center; overflow:hidden; }
+.quote-stage{ position:relative; height:clamp(160px,26vh,260px); width:min(900px,100%); margin-inline:auto; }
+.q{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center;
+  opacity:0; transform:translateY(26px) scale(.98);
+  transition:opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1);
+  padding-inline:6%;
+}
+.q .qt{
+  font-family:"Bricolage Grotesque", sans-serif; font-weight:800;
+  font-size:clamp(28px,5vw,60px); line-height:1.05; letter-spacing:-.02em;
+}
+.q.on{ opacity:1; transform:none; }
+.q b{ color:var(--gold); }
+.q small{ display:block; margin-top:18px; font-family:"JetBrains Mono",monospace;
+  font-size:clamp(12px,1.3vw,15px); font-weight:500; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--muted); }
+
+/* ---------- deck chrome: counter, progress, hints, badge ---------- */
+#chrome{ position:fixed; inset:0; pointer-events:none; z-index:50; }
+.deckmark{
+  position:absolute; top:22px; left:26px;
+  font-family:"JetBrains Mono",monospace; font-size:12px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted);
+  display:flex; align-items:center; gap:8px;
+}
+.deckmark .blip{ width:8px; height:8px; border-radius:50%; background:var(--gold); box-shadow:0 0 12px var(--gold); animation:pulse 2.4s ease infinite; }
+@keyframes pulse{ 50%{ opacity:.35; } }
+.counter{
+  position:absolute; top:22px; right:26px;
+  font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--muted);
+}
+.counter b{ color:var(--ink); }
+.progress{ position:absolute; left:0; bottom:0; height:3px; width:100%; background:rgba(255,255,255,.06); }
+.progress i{ display:block; height:100%; width:0; background:linear-gradient(90deg,var(--gold),var(--gold-deep)); transition:width .5s cubic-bezier(.2,.8,.2,1); box-shadow:0 0 14px rgba(255,200,87,.6); }
+.hint{
+  position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
+  font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.1em;
+  color:var(--muted); display:flex; gap:14px; align-items:center;
+  opacity:.8;
+}
+.hint kbd{ border:1px solid var(--line); border-radius:5px; padding:2px 7px; color:var(--ink); }
+.badge{
+  position:absolute; bottom:16px; right:22px; pointer-events:auto;
+  font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.05em;
+  color:var(--muted); text-decoration:none; display:flex; align-items:center; gap:7px;
+  border:1px solid var(--line); border-radius:999px; padding:6px 12px;
+  background:rgba(0,0,0,.3); transition:color .2s, border-color .2s;
+}
+.badge:hover{ color:var(--gold); border-color:color-mix(in srgb,var(--gold) 40%, transparent); }
+.badge .d{ width:7px; height:7px; border-radius:50%; background:var(--gold); }
+
+/* click zones for mouse navigation */
+.nav-zone{ position:fixed; top:0; bottom:0; width:18%; z-index:40; cursor:pointer; }
+.nav-zone.prev{ left:0; } .nav-zone.next{ right:0; }
+
+/* ---------- responsive ---------- */
+@media (max-width:820px){
+  .product .wrap{ grid-template-columns:1fr; gap:24px; }
+  .mock{ order:-1; }
+  .hint{ display:none; }
+}
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition-duration:.001s !important; }
+}
+</style>
+</head>
+<body>
+
+<main id="deck">
+
+  <!-- ============ 1 · COVER ============ -->
+  <section class="slide" id="cover" data-name="Cover">
+    <div class="coins" aria-hidden="true"></div>
+    <div class="wrap">
+      <img class="cover-avatar" src="assets/marc-avatar.png" alt="Marc Lou pirate avatar" data-reveal style="--i:0" />
+      <div class="eyebrow" data-reveal style="--i:1">May 2026 · solo founder report</div>
+      <div class="bignum" id="coverNum" data-reveal style="--i:2">$0</div>
+      <div class="cover-sub" data-reveal style="--i:3">in a single month — <b>Marc Lou</b>, one laptop, a pile of tiny products.</div>
+      <div data-reveal style="--i:4;margin-top:30px">
+        <span class="mrr-pill">⚓ Ship fast or die</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2 · WHO IS MARC ============ -->
+  <section class="slide product" id="marc" data-name="Marc Lou">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0">The captain</div>
+        <h2 class="headline" data-reveal style="--i:1">Marc&nbsp;Lou</h2>
+        <p class="p-tag" data-reveal style="--i:2">
+          French indie hacker. Builds small SaaS products fast, ships them in
+          public, and posts his revenue for the whole internet to see. No team,
+          no funding, no roadmap theatre — just one founder turning ideas into
+          paid URLs faster than most teams write a spec.
+        </p>
+        <div class="p-meta" data-reveal style="--i:3">
+          <span class="chip">@marclou</span>
+          <span class="chip">build → launch → repeat</span>
+          <span class="chip">maker of ShipFast</span>
+        </div>
+        <div data-reveal style="--i:4;margin-top:6px">
+          <span class="mrr-pill">💰 $87,507 in May 2026</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">marclou.com</span></div>
+        <div class="screen" style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center">
+          <img src="assets/marc-avatar.png" alt="" style="width:96px;height:96px;border-radius:50%;border:3px solid var(--gold)" />
+          <div style="font-family:'Bricolage Grotesque';font-weight:800;font-size:24px">Marc Lou</div>
+          <div class="mono" style="color:var(--muted);font-size:13px">Bootstrapped founder · ships weekly</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+            <span class="chip">12+ products</span><span class="chip">$1M+ lifetime</span><span class="chip">0 employees</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3 · THE SOURCE TWEET (recreated in CSS) ============ -->
+  <section class="slide brand-ink theme-x" id="tweet" data-name="The post">
+    <div class="wrap" style="display:flex;flex-direction:column;align-items:center;gap:22px">
+      <div class="eyebrow" data-reveal style="--i:0">The post that started this deck</div>
+      <div class="xcard" data-reveal style="--i:1">
+        <div class="xhead">
+          <img src="assets/marc-avatar.png" alt="Marc Lou" />
+          <div>
+            <div class="xname">Marc Lou
+              <svg class="xverify" viewBox="0 0 24 24" fill="#1d9bf0"><path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"/></svg>
+            </div>
+            <a class="xhandle" href="https://x.com/marclou" target="_blank" rel="noopener">@marclou</a>
+          </div>
+          <a class="xsub" href="https://x.com/marclou" target="_blank" rel="noopener">Subscribe</a>
+        </div>
+        <div class="xbody">I made <b>$87,507</b> in May 2026.</div>
+        <ul class="xlist" id="tweetList"></ul>
+        <div class="xfoot">To whoever bought PoopUp: Thank you ❤️</div>
+      </div>
+      <p class="lead" data-reveal style="--i:2;text-align:center">The blue rows are the real, live products. Let's walk the empire →</p>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       PRODUCT SLIDES — inserted here after brand research.
+       Each: <section class="slide product brand-ink theme-XXX"> ...
+       =================================================================== -->
+  <!-- ⭐ TrustMRR -->
+  <section class="slide product brand-ink theme-trustmrr" data-name="TrustMRR">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#1</span> · verified revenue</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">⭐</span> TrustMRR</div>
+        <div class="p-head" data-reveal style="--i:2">The database of <em>verified</em> startup revenues.</div>
+        <p class="p-tag" data-reveal style="--i:3">Connect Stripe read-only, earn an un-fakeable MRR badge, climb a public leaderboard. Show the numbers — or stop pretending.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">⭐ $27K&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">trustmrr.com</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">trustmrr.com/leaderboard</span></div>
+        <div class="screen">
+          <div class="row" style="justify-content:space-between;margin-bottom:14px"><b style="font-family:var(--brand-font);font-size:18px;color:var(--brand-ink)">Verified MRR</b><span class="tag-sm anim-blink">● LIVE</span></div>
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <div class="row"><span class="subtle" style="width:18px">1</span><span class="tick">✓</span><span style="flex:1;color:var(--brand-ink);font-weight:600">ShipFast</span><span class="mono" style="color:var(--brand);font-weight:800">$16.4K</span></div>
+            <div class="row"><span class="subtle" style="width:18px">2</span><span class="tick">✓</span><span style="flex:1;color:var(--brand-ink);font-weight:600">DataFast</span><span class="mono" style="color:var(--brand);font-weight:800">$20.1K</span></div>
+            <div class="row"><span class="subtle" style="width:18px">3</span><span class="tick">✓</span><span style="flex:1;color:var(--brand-ink);font-weight:600">CodeFast</span><span class="mono" style="color:var(--brand);font-weight:800">$8.0K</span></div>
+            <div class="row"><span class="subtle" style="width:18px">4</span><span class="tick">✓</span><span style="flex:1;color:var(--brand-ink);font-weight:600">PoopUp</span><span class="mono" style="color:var(--brand);font-weight:800">$85</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 📈 DataFast -->
+  <section class="slide product brand-ink theme-datafast" data-name="DataFast">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#2</span> · revenue analytics</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">📈</span> DataFast</div>
+        <div class="p-head" data-reveal style="--i:2">Which channels actually drive <em>revenue?</em></div>
+        <p class="p-tag" data-reveal style="--i:3">Analytics that tie every visitor to real sales — not vanity pageviews. Famous for its live 3D globe of paying customers.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">📈 $20K&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">datafa.st</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3;--brand-bg2:#0f0a1f" aria-hidden="true">
+        <div class="bar" style="background:#150d2b"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url" style="color:#a78bda">datafa.st/dashboard</span></div>
+        <div class="screen" style="background:#0f0a1f;color:#ece6ff">
+          <div class="row" style="gap:18px;align-items:center">
+            <div class="globe anim-spin"></div>
+            <div>
+              <div class="subtle" style="color:#a78bda">live visitors</div>
+              <div class="statbig" style="color:#c4b5fd">1,284</div>
+              <div class="tag-sm" style="background:rgba(124,58,237,.25);color:#c4b5fd">+ $612 today</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:9px;height:60px;margin-top:18px">
+            <span style="flex:1;background:#7c3aed;height:40%;border-radius:5px 5px 0 0"></span>
+            <span style="flex:1;background:#7c3aed;height:70%;border-radius:5px 5px 0 0"></span>
+            <span style="flex:1;background:#7c3aed;height:55%;border-radius:5px 5px 0 0"></span>
+            <span style="flex:1;background:#c4b5fd;height:100%;border-radius:5px 5px 0 0"></span>
+            <span style="flex:1;background:#7c3aed;height:48%;border-radius:5px 5px 0 0"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🏴‍☠️ Ship or Die -->
+  <section class="slide product brand-ink theme-shipordie" data-name="Ship or Die">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#3</span> · accountability, pirate-style</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">🏴‍☠️</span> Ship or Die</div>
+        <div class="p-head" data-reveal style="--i:2">Ship a startup in 30 days,<br>or get <em>kicked out</em> forever.</div>
+        <p class="p-tag" data-reveal style="--i:3">A ruthless build-in-public crew. Every commit puts your startup on the homepage. Miss the deadline and you walk the plank.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">🏴‍☠️ $20K&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">ship-or-die.com</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">ship-or-die.com</span></div>
+        <div class="screen" style="text-align:center">
+          <div class="anim-float" style="font-size:84px;line-height:1">💀</div>
+          <div style="font-family:var(--brand-font);font-weight:800;font-size:26px;color:#f5e9d6;margin-top:6px">DAY <span style="color:#dc2626">23</span> / 30</div>
+          <div class="meter" style="margin:14px auto;width:80%;background:rgba(255,255,255,.08)"><i style="width:77%;background:linear-gradient(90deg,#dc2626,#f59e0b)"></i></div>
+          <div class="row" style="justify-content:center;gap:8px;margin-top:6px">
+            <span class="tag-sm" style="background:rgba(220,38,38,.18);color:#fca5a5">3 walked the plank ☠️</span>
+            <span class="tag-sm" style="background:rgba(245,158,11,.18);color:#fbbf24">12 shipped 🏆</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 👨‍💻 CodeFast -->
+  <section class="slide product brand-ink theme-codefast" data-name="CodeFast">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#4</span> · learn to ship</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">👨‍💻</span> CodeFast</div>
+        <div class="p-head" data-reveal style="--i:2">Learn to code in <em>weeks</em>, not months.</div>
+        <p class="p-tag" data-reveal style="--i:3">215 short lessons that take a total beginner to a shipped, paying SaaS — using AI the way founders actually do.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">👨‍💻 $8K&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">codefa.st</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar" style="background:#0f1422"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url" style="color:#facc15">codefa.st/learn</span></div>
+        <div class="screen" style="background:#0c0f17;color:#eef2f8">
+          <div class="subtle" style="color:#9aa6bd">your roadmap · 62% complete</div>
+          <div class="meter" style="margin:10px 0 16px;background:rgba(255,255,255,.08)"><i style="width:62%;background:#facc15"></i></div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div class="row"><span style="color:#facc15">✓</span><span style="color:#eef2f8">HTML &amp; CSS basics</span></div>
+            <div class="row"><span style="color:#facc15">✓</span><span style="color:#eef2f8">Build the UI with AI</span></div>
+            <div class="row anim-blink"><span style="color:#facc15">▶</span><span style="color:#facc15;font-weight:700">Charge with Stripe</span></div>
+            <div class="row"><span style="color:#3b4255">○</span><span style="color:#8893a8">Launch &amp; get first $</span></div>
+          </div>
+          <div class="btn" style="margin-top:16px">Resume lesson →</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⚡ ShipFast (the flagship) -->
+  <section class="slide product brand-ink theme-shipfast" data-name="ShipFast">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#5</span> · the flagship</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">⚡</span> ShipFast</div>
+        <div class="p-head" data-reveal style="--i:2">Ship your startup in <em>days</em>, not weeks.</div>
+        <p class="p-tag" data-reveal style="--i:3">The Next.js boilerplate — Stripe, auth, emails, SEO — all wired up. The product that turned Marc into an indie legend.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">⚡ $7K&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">shipfa.st</span>
+          <span class="chip">$528K in months</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">shipfa.st</span></div>
+        <div class="screen">
+          <div style="font-family:var(--brand-font);font-weight:800;font-size:22px;color:var(--brand-ink);line-height:1.1">Ship your startup<br>in days <span style="color:var(--brand)">⚡</span></div>
+          <div class="btn anim-breathe" style="margin:16px 0 14px">Get ShipFast</div>
+          <div style="background:#15130c;border-radius:10px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#ffd24a">
+            <span style="color:#7c8089">$</span> npx create-shipfast<br><span style="color:#7c8089"># auth ✓ stripe ✓ emails ✓ seo ✓</span>
+          </div>
+          <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap">
+            <span class="tag-sm">Stripe</span><span class="tag-sm">Mongo</span><span class="tag-sm">NextJS</span><span class="tag-sm">Mailgun</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🦐 SuperShrimp -->
+  <section class="slide product brand-ink theme-supershrimp" data-name="SuperShrimp">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#6</span> · webcam posture coach</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">🦐</span> SuperShrimp</div>
+        <div class="p-head" data-reveal style="--i:2">Stop sitting like a <em>shrimp.</em></div>
+        <p class="p-tag" data-reveal style="--i:3">Turns your laptop webcam into a posture coach that catches you slouching and nudges you back upright — privately, on-device.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">🦐 $1K&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">supershrimp.io</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">supershrimp.io</span></div>
+        <div class="screen" style="text-align:center">
+          <div class="anim-float" style="font-size:72px;line-height:1">🦐</div>
+          <div class="subtle" style="margin-top:6px">posture score</div>
+          <div class="statbig">92<span style="font-size:.4em">/100</span></div>
+          <div class="meter" style="margin:12px 0"><i style="width:92%;background:linear-gradient(90deg,#06b6d4,#fb7185)"></i></div>
+          <div class="tag-sm" style="background:rgba(251,113,133,.18);color:#fb7185">sit up! +4 streak 🔥</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🥐 Indie Page -->
+  <section class="slide product brand-ink theme-indiepage" data-name="Indie Page">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#7</span> · link-in-bio for makers</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">🥐</span> Indie Page</div>
+        <div class="p-head" data-reveal style="--i:2">Showcase and grow your <em>startups.</em></div>
+        <p class="p-tag" data-reveal style="--i:3">One page for everything you build — products, revenue, build-in-public updates, and do-follow backlinks that actually rank.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">🥐 $715&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">indiepa.ge</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">indiepa.ge/marc</span></div>
+        <div class="screen">
+          <div class="row" style="margin-bottom:14px"><img src="assets/marc-avatar.png" alt="" style="width:42px;height:42px;border-radius:50%"><div><div style="font-weight:800;color:var(--brand-ink)">Marc Lou</div><div class="subtle">building 12 startups in public</div></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="border:1px solid color-mix(in srgb,var(--brand-ink) 12%,transparent);border-radius:10px;padding:10px"><div style="font-weight:700;color:var(--brand-ink)">⚡ ShipFast</div><div class="mono" style="color:var(--brand);font-size:12px;font-weight:800">$7K/mo</div></div>
+            <div style="border:1px solid color-mix(in srgb,var(--brand-ink) 12%,transparent);border-radius:10px;padding:10px"><div style="font-weight:700;color:var(--brand-ink)">📈 DataFast</div><div class="mono" style="color:var(--brand);font-size:12px;font-weight:800">$20K/mo</div></div>
+            <div style="border:1px solid color-mix(in srgb,var(--brand-ink) 12%,transparent);border-radius:10px;padding:10px"><div style="font-weight:700;color:var(--brand-ink)">👨‍💻 CodeFast</div><div class="mono" style="color:var(--brand);font-size:12px;font-weight:800">$8K/mo</div></div>
+            <div style="border:1px solid color-mix(in srgb,var(--brand-ink) 12%,transparent);border-radius:10px;padding:10px"><div style="font-weight:700;color:var(--brand-ink)">🛡️ ByeDispute</div><div class="mono" style="color:var(--brand);font-size:12px;font-weight:800">$248/mo</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🛡️ ByeDispute -->
+  <section class="slide product brand-ink theme-byedispute" data-name="ByeDispute">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#8</span> · stripe protection</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">🛡️</span> ByeDispute</div>
+        <div class="p-head" data-reveal style="--i:2">Don't let a dispute get you <em>banned</em> from Stripe.</div>
+        <p class="p-tag" data-reveal style="--i:3">Catches angry customers before they chargeback — so your Stripe account (and your business) stays alive.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">🛡️ $248&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">byedispute.com</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">byedispute.com</span></div>
+        <div class="screen" style="text-align:center">
+          <div class="anim-breathe" style="display:inline-flex;width:84px;height:84px;border-radius:50%;align-items:center;justify-content:center;font-size:42px;background:color-mix(in srgb,var(--brand) 14%,transparent)">🛡️</div>
+          <div style="font-family:var(--brand-font);font-weight:800;font-size:20px;color:var(--brand-ink);margin-top:12px">You're protected</div>
+          <div class="row" style="justify-content:center;gap:8px;margin-top:12px">
+            <span class="tick">✓</span><span class="subtle">37 disputes prevented this month</span>
+          </div>
+          <div class="tag-sm" style="margin-top:12px;background:rgba(34,197,94,.16);color:#16a34a">Stripe account: healthy 🎉</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🌱 HabitsGarden -->
+  <section class="slide product brand-ink theme-habits" data-name="HabitsGarden">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#9</span> · gamified habits</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">🌱</span> HabitsGarden</div>
+        <div class="p-head" data-reveal style="--i:2">Grow a garden by <em>growing yourself.</em></div>
+        <p class="p-tag" data-reveal style="--i:3">Complete real-life quests, earn flowers, and watch a digital garden bloom. 8,500+ people getting 1% better every day.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">🌱 $97&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">habitsgarden.com</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">habitsgarden.com</span></div>
+        <div class="screen">
+          <div class="subtle">today's garden</div>
+          <div class="row anim-float" style="font-size:38px;gap:4px;margin:8px 0 14px;justify-content:center">🌻🌱🌺🌷🌻🌸</div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div class="row" style="justify-content:space-between"><span style="color:var(--brand-ink)">💧 Drink water</span><span class="tag-sm">+1 🌱</span></div>
+            <div class="row" style="justify-content:space-between"><span style="color:var(--brand-ink)">🏃 Move 20 min</span><span class="tag-sm">+1 🌻</span></div>
+            <div class="row" style="justify-content:space-between"><span style="color:var(--brand-ink)">📵 No phone in bed</span><span class="tag-sm" style="background:color-mix(in srgb,var(--brand-2) 22%,transparent);color:var(--brand-2)">12-day streak 🔥</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🧬 BioAge -->
+  <section class="slide product brand-ink theme-bioage" data-name="BioAge">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#10</span> · longevity dashboard</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">🧬</span> BioAge</div>
+        <div class="p-head" data-reveal style="--i:2">Your body's <em>operating system.</em></div>
+        <p class="p-tag" data-reveal style="--i:3">Track and lower your biological age across nutrition, exercise and sleep — one clear number, getting younger.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">🧬 $49&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">bioa.ge</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">bioa.ge/dashboard</span></div>
+        <div class="screen" style="text-align:center">
+          <div class="subtle">biological age</div>
+          <div class="statbig">28.4<span style="font-size:.35em;color:#16a34a"> ↓ 3.1 yrs</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px">
+            <div style="border:1px solid color-mix(in srgb,var(--brand-ink) 12%,transparent);border-radius:10px;padding:10px"><div style="font-size:22px">🍎</div><div class="subtle">nutrition</div><div class="mono" style="color:#16a34a;font-weight:800;font-size:13px">A-</div></div>
+            <div style="border:1px solid color-mix(in srgb,var(--brand-ink) 12%,transparent);border-radius:10px;padding:10px"><div style="font-size:22px">💪</div><div class="subtle">exercise</div><div class="mono" style="color:#7c3aed;font-weight:800;font-size:13px">B+</div></div>
+            <div style="border:1px solid color-mix(in srgb,var(--brand-ink) 12%,transparent);border-radius:10px;padding:10px"><div style="font-size:22px">💤</div><div class="subtle">sleep</div><div class="mono" style="color:#06b6d4;font-weight:800;font-size:13px">A</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 📚 WorkbookPDF -->
+  <section class="slide product brand-ink theme-workbook" data-name="WorkbookPDF">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#11</span> · personalized language PDFs</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">📚</span> WorkbookPDF</div>
+        <div class="p-head" data-reveal style="--i:2">Language workbooks made <em>just for you.</em></div>
+        <p class="p-tag" data-reveal style="--i:3">AI builds grammar and vocab exercises around your level and interests — across 23 languages. Print it or do it online.</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">📚 $19&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">workbookpdf.com</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">workbookpdf.com</span></div>
+        <div class="screen">
+          <div class="subtle">pick your language</div>
+          <div class="row anim-float" style="font-size:34px;gap:10px;margin:10px 0 16px;justify-content:center">🇪🇸 🇫🇷 🇰🇷 🇯🇵 🇮🇹</div>
+          <div style="border:1px solid color-mix(in srgb,var(--brand-ink) 12%,transparent);border-radius:10px;padding:14px">
+            <div style="font-weight:800;color:var(--brand-ink)">Español · A2 · Cooking</div>
+            <div class="subtle" style="margin-top:6px">1. Completa: «Yo ___ una paella.»</div>
+            <div class="subtle">2. Traduce: "to chop the onion"</div>
+            <div class="btn dark" style="margin-top:12px;background:var(--brand)">Generate my PDF</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 💩 PoopUp -->
+  <section class="slide product brand-ink theme-poopup" data-name="PoopUp">
+    <div class="wrap">
+      <div class="p-copy">
+        <div class="eyebrow" data-reveal style="--i:0"><span class="rank">#12</span> · conversion popups</div>
+        <div class="p-logo" data-reveal style="--i:1"><span class="ic">💩</span> PoopUp</div>
+        <div class="p-head" data-reveal style="--i:2">Turn visitors into <em>customers</em> 🤑</div>
+        <p class="p-tag" data-reveal style="--i:3">No-code "wake-up call" popups that nudge people to buy. Built in 4 days on the ShipFast boilerplate — and someone bought it. ❤️</p>
+        <div class="p-meta" data-reveal style="--i:4">
+          <span class="mrr-pill">💩 $18&nbsp;<span style="opacity:.6;font-weight:500">/ mo</span></span>
+          <span class="chip">poopup.co</span>
+        </div>
+      </div>
+      <div class="mock" data-reveal style="--i:3" aria-hidden="true">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">your-store.com</span></div>
+        <div class="screen" style="position:relative;min-height:170px">
+          <div class="subtle">your website</div>
+          <div style="height:8px;background:color-mix(in srgb,var(--brand-ink) 8%,transparent);border-radius:4px;margin:10px 0;width:70%"></div>
+          <div style="height:8px;background:color-mix(in srgb,var(--brand-ink) 8%,transparent);border-radius:4px;margin:10px 0;width:90%"></div>
+          <div class="anim-float" style="position:absolute;right:14px;bottom:14px;background:#fff;border:2px solid var(--brand);border-radius:14px;padding:12px 14px;box-shadow:0 14px 30px rgba(0,0,0,.18);max-width:62%">
+            <div class="row" style="gap:8px"><span style="font-size:24px">💩</span><div><div style="font-weight:800;color:var(--brand-ink);font-size:13px">Don't miss out!</div><div class="subtle" style="font-size:11px">23 people bought today</div></div></div>
+            <div class="btn" style="margin-top:8px;font-size:12px;padding:.5em .9em">Get 20% off</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MRR LEADERBOARD ============ -->
+  <section class="slide" id="board" data-name="By MRR">
+    <div class="wrap" style="text-align:center">
+      <div class="eyebrow" data-reveal style="--i:0">12 products · 0 employees</div>
+      <h2 class="headline" data-reveal style="--i:1">The empire, by <span style="color:var(--gold)">MRR</span></h2>
+      <div class="lb" data-bars id="boardLb" data-reveal style="--i:2; margin-top:clamp(20px,3vh,36px)"></div>
+      <div class="mono" data-reveal style="--i:3;margin-top:24px;color:var(--muted);letter-spacing:.05em">
+        TOTAL&nbsp; <b style="color:var(--gold);font-size:1.2em">$87,507</b> &nbsp;/ month · May 2026
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CLOSING · ANIMATED QUOTES ============ -->
+  <section class="slide" id="closing" data-name="Ship fast">
+    <div class="wrap">
+      <div class="eyebrow" data-reveal style="--i:0">The only strategy</div>
+      <div class="quote-stage" id="quoteStage"></div>
+      <div data-reveal style="--i:1;margin-top:26px">
+        <span class="mrr-pill">⚓ Built in public · shipped with dropthis</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- deck chrome -->
+<div id="chrome">
+  <div class="deckmark"><span class="blip"></span> SHIP FAST OR DIE</div>
+  <div class="counter"><b id="cur">1</b> / <span id="tot">1</span></div>
+  <div class="progress"><i id="bar"></i></div>
+  <div class="hint"><span><kbd>←</kbd> <kbd>→</kbd> navigate</span><span><kbd>F</kbd> fullscreen</span><span><kbd>P</kbd> <span id="autoState">auto ▸</span></span></div>
+  <a class="badge" href="https://dropthis.app" target="_blank" rel="noopener"><span class="d"></span> Published with dropthis</a>
+</div>
+<div class="nav-zone prev" id="zPrev" aria-label="Previous slide"></div>
+<div class="nav-zone next" id="zNext" aria-label="Next slide"></div>
+
+<script>
+/* ============================================================
+   The source tweet data (drives the recreated X card + leaderboard)
+   `real:true` = a genuinely live Marc Lou product.
+   ============================================================ */
+/* every blue row is a real, live product (a slide follows). Twitter & YouTube are channels. */
+const TWEET = [
+  { ic:"⭐",  name:"TrustMRR",    amt:"$27K",  real:true  },
+  { ic:"📈",  name:"DataFast",    amt:"$20K",  real:true  },
+  { ic:"🏴‍☠️", name:"Ship or Die",  amt:"$20K",  real:true  },
+  { ic:"👨‍💻", name:"CodeFast",    amt:"$8K",   real:true  },
+  { ic:"⚡",  name:"ShipFast",    amt:"$7K",   real:true  },
+  { ic:"🐦",  name:"Twitter",     amt:"$3.2K", real:false },
+  { ic:"🦐",  name:"SuperShrimp", amt:"$1K",   real:true  },
+  { ic:"🥐",  name:"Indie Page",  amt:"$715",  real:true  },
+  { ic:"🛡️",  name:"ByeDispute",  amt:"$248",  real:true  },
+  { ic:"🎞️",  name:"YouTube",     amt:"$111",  real:false },
+  { ic:"🌱",  name:"HabitsGarden",amt:"$97",   real:true  },
+  { ic:"🧬",  name:"BioAge",      amt:"$49",   real:true  },
+  { ic:"📚",  name:"WorkbookPDF", amt:"$19",   real:true  },
+  { ic:"💩",  name:"PoopUp",      amt:"$18",   real:true  },
+];
+
+/* ship-fast quotes for the closing slide (filled from research) */
+const QUOTES = [
+  { t:'Just <b>Ship</b> It.', a:'marc lou' },
+  { t:'Ship the <b>24-hour</b><br>version of your idea.', a:'marc lou' },
+  { t:'Every startup has a<br><b>weekend</b> version. Find it.', a:'marc lou' },
+  { t:'A startup is a repetition<br>of <b>tiny failures.</b>', a:'marc lou' },
+  { t:'Ship 20 products<br>knowing <b>19 will fail.</b>', a:'marc lou’s strategy' },
+  { t:'Ship, <b>learn</b>, repeat.', a:'marc lou' },
+  { t:'One artifact in.<br>One <b>URL</b> out.', a:'dropthis.app' },
+];
+
+/* ---- render the recreated tweet list ---- */
+(function(){
+  const ul = document.getElementById('tweetList');
+  ul.innerHTML = TWEET.map(p =>
+    `<li class="${p.real?'real':''}"><span>${p.ic}</span><span class="nm">${p.name}</span><span class="amt">${p.amt}</span></li>`
+  ).join('');
+})();
+
+/* ---- render the MRR leaderboard (real products, by tweet order) ---- */
+(function(){
+  const lb = document.getElementById('boardLb');
+  const w  = ['100%','76%','76%','34%','30%','14%','12%','9%','7.5%','6.5%','5.5%','5%'];
+  const prods = TWEET.filter(p=>p.real);
+  lb.innerHTML = prods.map((p,i)=>
+    `<div class="lb-row"><span class="em">${p.ic}</span><span class="nm">${p.name}</span>`+
+    `<span class="lb-track"><i class="lb-fill" data-w="${w[i]}" style="--i:${i}"></i></span>`+
+    `<span class="v">${p.amt}</span></div>`
+  ).join('');
+})();
+
+/* ---- cover coin rain ---- */
+(function(){
+  const c = document.querySelector('#cover .coins');
+  const glyphs = ['🪙','💰','💵','⭐','💎'];
+  for(let i=0;i<22;i++){
+    const s = document.createElement('span');
+    s.className='coin'; s.textContent = glyphs[i%glyphs.length];
+    s.style.left = (Math.random()*100)+'%';
+    s.style.animationDuration = (6+Math.random()*7)+'s';
+    s.style.animationDelay = (-Math.random()*10)+'s';
+    s.style.fontSize = (12+Math.random()*18)+'px';
+    c.appendChild(s);
+  }
+})();
+
+/* ============================================================
+   Slide engine: keyboard, click zones, swipe, progress, hash
+   ============================================================ */
+const slides = [...document.querySelectorAll('.slide')];
+const tot = slides.length;
+let idx = 0, coverAnimated = false, quoteTimer = null;
+
+document.getElementById('tot').textContent = tot;
+
+function show(n){
+  idx = Math.max(0, Math.min(tot-1, n));
+  slides.forEach((s,i)=> s.classList.toggle('is-active', i===idx));
+  document.getElementById('cur').textContent = idx+1;
+  document.getElementById('bar').style.width = ((idx+1)/tot*100)+'%';
+  if(location.hash !== '#'+(idx+1)) history.replaceState(null,'','#'+(idx+1));
+  // per-slide side effects
+  if(slides[idx].id==='cover' && !coverAnimated){ coverAnimated=true; countUp(); }
+  if(slides[idx].id==='closing') startQuotes(); else stopQuotes();
+  triggerScoreboard();
+  scheduleAuto();
+}
+function next(){ show(idx+1); }
+function prev(){ show(idx-1); }
+
+/* animated MRR total on the cover */
+function countUp(){
+  const el = document.getElementById('coverNum');
+  const target = 87507, dur = 1600, t0 = performance.now();
+  function step(t){
+    const k = Math.min(1, (t-t0)/dur);
+    const e = 1 - Math.pow(1-k, 3);              // easeOutCubic
+    el.textContent = '$' + Math.round(target*e).toLocaleString('en-US');
+    if(k<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* closing quotes cycle */
+function startQuotes(){
+  const stage = document.getElementById('quoteStage');
+  if(!stage.children.length){
+    QUOTES.forEach((q,i)=>{
+      const d = document.createElement('div'); d.className='q';
+      d.innerHTML = '<span class="qt">'+q.t+'</span><small>'+q.a+'</small>';
+      stage.appendChild(d);
+    });
+  }
+  const qs = [...stage.children];
+  let qi = 0;
+  qs.forEach(q=>q.classList.remove('on'));
+  qs[0].classList.add('on');
+  stopQuotes();
+  quoteTimer = setInterval(()=>{
+    qs[qi].classList.remove('on');
+    qi = (qi+1) % qs.length;
+    qs[qi].classList.add('on');
+  }, 2600);
+}
+function stopQuotes(){ if(quoteTimer){ clearInterval(quoteTimer); quoteTimer=null; } }
+
+/* animate leaderboard bars from 0 → target each time the slide opens */
+function triggerScoreboard(){
+  const sb = slides[idx].querySelector('[data-bars]');
+  if(!sb) return;
+  const fills = [...sb.querySelectorAll('.lb-fill')];
+  fills.forEach(f=> f.style.width = '0%');
+  requestAnimationFrame(()=> requestAnimationFrame(()=>{
+    fills.forEach(f=> f.style.width = f.dataset.w);
+  }));
+}
+
+/* ---- autoplay: advance every 3s unless the viewer takes over ---- */
+const AUTO_MS = 3000;
+let autoTimer = null, autoPaused = false;
+function scheduleAuto(){
+  clearTimeout(autoTimer);
+  if(autoPaused || idx >= tot-1) return;   // stop on the final slide
+  autoTimer = setTimeout(next, AUTO_MS);
+}
+function toggleAuto(){
+  autoPaused = !autoPaused;
+  document.getElementById('autoState').textContent = autoPaused ? 'paused ⏸' : 'auto ▸';
+  scheduleAuto();
+}
+
+/* inputs */
+addEventListener('keydown', e=>{
+  if(['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)){ e.preventDefault(); next(); }
+  else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(tot-1); }
+  else if(e.key==='f' || e.key==='F'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+  else if(e.key==='p' || e.key==='P'){ toggleAuto(); }
+});
+document.getElementById('zNext').addEventListener('click', next);
+document.getElementById('zPrev').addEventListener('click', prev);
+
+/* touch swipe */
+let tx=0;
+addEventListener('touchstart', e=> tx=e.touches[0].clientX, {passive:true});
+addEventListener('touchend', e=>{
+  const dx = e.changedTouches[0].clientX - tx;
+  if(Math.abs(dx)>50){ dx<0 ? next() : prev(); }
+}, {passive:true});
+
+/* boot (respect deep-link hash) */
+const start = parseInt(location.hash.replace('#',''))||1;
+show(start-1);
+</script>
+</body>
+</html>
