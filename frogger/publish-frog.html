@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Publish Frog — Get your AI artifact across the internet</title>
+<style>
+  /* ============================================================
+     PUBLISH FROG — a tiny 8-bit arcade game
+     Single file. No external assets. No build step.
+     ============================================================ */
+
+  :root {
+    --bg:      #0b0420;   /* deep arcade purple-black */
+    --ink:     #e9f7ff;
+    --accent:  #5cff9d;   /* frog green */
+    --accent2: #ffe14d;   /* coin yellow */
+    --danger:  #ff5470;
+    --panel:   #1a0f3a;
+    --portal:  #4dd2ff;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background:
+      radial-gradient(circle at 50% 0%, #1d0f4a 0%, var(--bg) 60%, #050211 100%);
+    color: var(--ink);
+    font-family: "Courier New", Courier, monospace;
+    /* chunky retro text: blocky, uppercase, slightly spaced */
+    letter-spacing: 1px;
+    -webkit-font-smoothing: none;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+
+  /* The whole game scales to fit the viewport while keeping aspect ratio */
+  #stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  #cabinet {
+    position: relative;
+    width: min(96vw, 460px);
+    max-height: 98vh;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr) auto;
+    gap: 4px;
+    align-items: stretch;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  .stat {
+    background: var(--panel);
+    border: 3px solid #000;
+    box-shadow: inset 0 0 0 2px #3a2a6e;
+    padding: 5px 4px;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .stat b {
+    display: block;
+    font-size: 14px;
+    color: var(--accent2);
+    letter-spacing: 0;
+  }
+  .stat.lives b { color: var(--accent); }
+  #muteBtn {
+    background: var(--panel);
+    border: 3px solid #000;
+    box-shadow: inset 0 0 0 2px #3a2a6e;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 10px;
+  }
+  #muteBtn:active { transform: translateY(1px); }
+
+  /* ---------- Canvas / screen ---------- */
+  #screen {
+    position: relative;
+    border: 4px solid #000;
+    box-shadow:
+      inset 0 0 0 3px #3a2a6e,
+      0 0 0 4px #000,
+      0 10px 30px rgba(0,0,0,0.6);
+    background: #05030f;
+    line-height: 0;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* CRT scanlines + subtle vignette + flicker */
+  .crt {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 0px,
+        rgba(0,0,0,0) 2px,
+        rgba(0,0,0,0.18) 3px,
+        rgba(0,0,0,0.18) 3px
+      ),
+      radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.45) 100%);
+    mix-blend-mode: multiply;
+    animation: flicker 5s infinite steps(60);
+  }
+  @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:.94} }
+
+  /* "Published with dropthis" badge */
+  #badge {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    z-index: 6;
+    font-size: 9px;
+    text-transform: uppercase;
+    color: #b9a9ff;
+    background: rgba(10,5,30,0.75);
+    border: 2px solid #000;
+    box-shadow: inset 0 0 0 1px #4dd2ff;
+    padding: 3px 6px;
+    letter-spacing: 1px;
+  }
+  #badge b { color: var(--portal); }
+
+  /* ---------- Overlays (title / gameover / win) ---------- */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 18px;
+    background: rgba(8,3,24,0.88);
+    line-height: 1.5;
+  }
+  .overlay.hidden { display: none; }
+
+  .title {
+    font-size: 30px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-shadow: 3px 3px 0 #0a5b34, 6px 6px 0 rgba(0,0,0,0.5);
+    margin: 0 0 6px;
+    animation: bob 1.4s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  .subtitle { font-size: 12px; color: var(--ink); margin: 0 0 18px; text-transform: uppercase; }
+  .big { font-size: 22px; color: var(--accent2); text-transform: uppercase; margin: 0 0 8px; }
+  .win-title {
+    font-size: 30px; color: var(--accent); text-transform: uppercase;
+    text-shadow: 3px 3px 0 #0a5b34; margin: 0 0 10px;
+    animation: bob 1.2s ease-in-out infinite;
+  }
+  .line { font-size: 12px; color: var(--ink); margin: 2px 0; text-transform: uppercase; }
+  .muted { font-size: 10px; color: #b9a9ff; margin-top: 10px; text-transform: uppercase; }
+  .url { color: var(--portal); font-size: 16px; letter-spacing: 2px; }
+
+  .btn {
+    margin-top: 18px;
+    font-family: inherit;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #05030f;
+    background: var(--accent);
+    border: 3px solid #000;
+    box-shadow: 0 4px 0 #0a5b34, 0 4px 0 3px #000;
+    padding: 12px 20px;
+    cursor: pointer;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #0a5b34, 0 0 0 3px #000; }
+  .hint { font-size: 9px; color: #8a7ad0; margin-top: 14px; text-transform: uppercase; }
+
+  /* tiny animated frog on the title screen */
+  .title-frog { font-size: 0; margin-bottom: 8px; }
+
+  /* ---------- Touch controls ---------- */
+  #pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 6px;
+    width: 100%;
+    max-width: 280px;
+    margin: 2px auto 0;
+  }
+  .padBtn {
+    font-family: inherit;
+    font-size: 22px;
+    color: var(--ink);
+    background: var(--panel);
+    border: 3px solid #000;
+    box-shadow: inset 0 0 0 2px #3a2a6e, 0 3px 0 #000;
+    padding: 14px 0;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  .padBtn:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #3a2a6e; }
+  .padBtn.up    { grid-column: 2; grid-row: 1; }
+  .padBtn.left  { grid-column: 1; grid-row: 2; }
+  .padBtn.down  { grid-column: 2; grid-row: 2; }
+  .padBtn.right { grid-column: 3; grid-row: 2; }
+
+  /* Hide the d-pad on large pointer devices to keep it clean (still works on touch). */
+  @media (pointer: fine) and (min-width: 520px) {
+    #pad { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="cabinet">
+
+    <!-- HUD -->
+    <div id="hud">
+      <div class="stat lives">Lives<b id="hudLives">3</b></div>
+      <div class="stat">Score<b id="hudScore">0</b></div>
+      <div class="stat">Time<b id="hudTime">0.0</b></div>
+      <div class="stat">Best<b id="hudBest">0</b></div>
+      <button id="muteBtn" title="Mute / unmute (M)">🔊</button>
+    </div>
+
+    <!-- Screen -->
+    <div id="screen">
+      <canvas id="game" width="440" height="520"></canvas>
+      <div class="crt"></div>
+      <div id="badge">Published with <b>dropthis</b></div>
+
+      <!-- Title screen -->
+      <div class="overlay" id="titleScreen">
+        <div class="title">Publish Frog</div>
+        <div class="subtitle">Get your AI artifact<br>across the internet.</div>
+        <button class="btn" id="startBtn">Start dropping</button>
+        <div class="hint">Arrows / WASD &nbsp;•&nbsp; tap the d-pad on mobile</div>
+      </div>
+
+      <!-- Game over screen -->
+      <div class="overlay hidden" id="overScreen">
+        <div class="big">Game Over</div>
+        <div class="line">Your artifact died on localhost.</div>
+        <div class="line" style="color:var(--accent2)" id="overScore"></div>
+        <button class="btn" id="retryBtn">Try again</button>
+      </div>
+
+      <!-- Win screen -->
+      <div class="overlay hidden" id="winScreen">
+        <div class="win-title">Published!</div>
+        <div class="line">One artifact in. One URL out.</div>
+        <div class="line url">dropthis.app</div>
+        <div class="muted">No repo. No config. No deploy pipeline.</div>
+        <div class="line" style="color:var(--accent2);margin-top:12px" id="winScore"></div>
+        <button class="btn" id="againBtn">Drop another</button>
+      </div>
+    </div>
+
+    <!-- Touch d-pad -->
+    <div id="pad">
+      <button class="padBtn up"    data-dir="up"    aria-label="up">▲</button>
+      <button class="padBtn left"  data-dir="left"  aria-label="left">◀</button>
+      <button class="padBtn down"  data-dir="down"  aria-label="down">▼</button>
+      <button class="padBtn right" data-dir="right" aria-label="right">▶</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===========================================================================
+   PUBLISH FROG
+   An 8-bit Frogger parody about the pain of publishing AI-generated files.
+   Cross GitHub traffic, config chaos, deploy trucks, the DNS river,
+   firewalls and AI slop to reach the glowing URL portal.
+   =========================================================================== */
+
+// ---------- Constants & layout ----------
+const TILE = 40;                 // pixel size of one grid cell
+const COLS = 11;                 // grid width  (440px)
+const ROWS = 13;                 // grid height (520px)
+const W = COLS * TILE;
+const H = ROWS * TILE;
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+
+// Row index 0 = top (portal). Row index ROWS-1 = bottom (start).
+// We describe lanes from the TOP down so it reads like the screen.
+//   safe  : nothing kills you here
+//   road  : touching an obstacle = death
+//   water : you must ride an obstacle, otherwise you drown
+const LANES = [
+  { type: "safe",  kind: "portal" },                                                                 // 0  URL portal
+  { type: "road",  kind: "slop",     dir:-1, speed:135, gap:2.4, len:2, labels:["AI slop","GPT","LLM","hallucinate","slop"] }, // 1  AI slop storm
+  { type: "road",  kind: "slop",     dir: 1, speed:110, gap:2.8, len:1, labels:["blob","token","prompt","slop"] },            // 2  AI slop storm
+  { type: "road",  kind: "firewall", dir: 1, speed:95,  gap:3.0, len:2, labels:["403","🔒 deny","firewall","blocked"] },       // 3  firewall lane
+  { type: "water", kind: "dns",      dir:-1, speed:70,  gap:2.6, len:3, labels:["DNS?","CNAME","A record","TTL 86400"] },      // 4  DNS river
+  { type: "water", kind: "dns",      dir: 1, speed:55,  gap:2.8, len:2, labels:["MX","propagating…","NXDOMAIN","DNS?"] },      // 5  DNS river
+  { type: "water", kind: "dns",      dir:-1, speed:85,  gap:2.4, len:3, labels:["resolve","SOA","root NS","DNS?"] },           // 6  DNS river
+  { type: "safe",  kind: "median" },                                                                 // 7  safe median (deploy preview)
+  { type: "road",  kind: "deploy",   dir: 1, speed:120, gap:2.6, len:2, labels:["build failed","deploy","CI/CD","npm err"] },  // 8  deploy lane
+  { type: "road",  kind: "config",   dir:-1, speed:90,  gap:2.8, len:2, labels:["config",".env","pkg.json","YAML"] },         // 9  config chaos
+  { type: "road",  kind: "github",   dir: 1, speed:75,  gap:3.0, len:2, labels:["repo","PR #42","git push","merge"] },        // 10 github traffic
+  { type: "road",  kind: "github",   dir:-1, speed:100, gap:2.6, len:1, labels:["fork","commit","rebase","conflict"] },       // 11 github traffic
+  { type: "safe",  kind: "swamp" },                                                                  // 12 localhost swamp (start)
+];
+
+// Per-kind palette for obstacles { body, top, text }
+const KIND_STYLE = {
+  slop:     { body:"#c06bff", top:"#e3b6ff", text:"#1a0033" },
+  firewall: { body:"#ff5470", top:"#ffb3c1", text:"#330008" },
+  dns:      { body:"#7a5230", top:"#a9794a", text:"#fff3e0" }, // logs
+  deploy:   { body:"#ff9f43", top:"#ffd9a8", text:"#3a1d00" },
+  config:   { body:"#4dd2ff", top:"#b3edff", text:"#022a3a" },
+  github:   { body:"#3a3f55", top:"#6b7290", text:"#e9f7ff" },
+};
+
+// ---------- Game state ----------
+const STATE = { TITLE:"title", PLAYING:"playing", OVER:"over", WIN:"win" };
+let state = STATE.TITLE;
+
+let lanes = [];        // runtime lane objects with obstacle arrays
+let frog;              // { col, row, px, py, onLog, hop }
+let lives, score, furthest, startTime, elapsed, shake;
+let particles = [];
+let best = parseInt(localStorage.getItem("publishfrog_best") || "0", 10);
+
+// ---------- Audio (Web Audio API only) ----------
+let audioCtx = null;
+let muted = false;
+function ensureAudio() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+}
+// Play a single 8-bit blip.
+function blip(freq, dur, type = "square", vol = 0.12, when = 0) {
+  if (muted || !audioCtx) return;
+  const t = audioCtx.currentTime + when;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + dur);
+}
+function sMove()  { blip(440, 0.06, "square", 0.10); }
+function sHit()   { blip(200, 0.18, "sawtooth", 0.16); blip(90, 0.30, "square", 0.14, 0.05); }
+function sStart() { [330,440,550,660].forEach((f,i)=>blip(f,0.10,"square",0.12,i*0.08)); }
+function sWin()   { [523,659,784,1047,1319].forEach((f,i)=>blip(f,0.16,"square",0.14,i*0.10)); }
+
+// ---------- Build a fresh set of lanes with obstacles ----------
+function buildLanes() {
+  lanes = LANES.map((cfg, row) => {
+    const lane = { ...cfg, row, obstacles: [] };
+    if (cfg.type === "safe") return lane;
+
+    // Lay obstacles evenly across a span wider than the screen so wrapping is seamless.
+    const len = cfg.len;
+    const step = len + cfg.gap;                 // spacing between obstacle starts, in tiles
+    const count = Math.ceil(COLS / step) + 2;
+    // deterministic-ish offset per row so lanes don't all line up
+    const offset = (row * 1.7) % step;
+    for (let i = 0; i < count; i++) {
+      const startTile = i * step + offset;
+      lane.obstacles.push({
+        x: startTile * TILE,
+        w: len * TILE,
+        label: cfg.labels[(i + row) % cfg.labels.length],
+      });
+    }
+    lane.span = count * step * TILE;            // total width before wrap
+    return lane;
+  });
+}
+
+// ---------- Reset frog to the bottom (localhost swamp) ----------
+function resetFrog() {
+  frog = {
+    col: Math.floor(COLS / 2),
+    row: ROWS - 1,
+    px: Math.floor(COLS / 2) * TILE,
+    py: (ROWS - 1) * TILE,
+    onLog: false,
+    hop: 0,           // animation timer for the little jump squash
+    facing: "up",
+  };
+}
+
+// ---------- Start a new game ----------
+function newGame() {
+  buildLanes();
+  resetFrog();
+  lives = 3;
+  score = 0;
+  furthest = ROWS - 1;
+  elapsed = 0;
+  startTime = null;        // set on first frame of play
+  shake = 0;
+  particles = [];
+  state = STATE.PLAYING;
+  hideOverlays();
+  updateHud();
+}
+
+// ---------- Player movement (one tile per press) ----------
+function move(dir) {
+  if (state !== STATE.PLAYING) return;
+  let { col, row } = frog;
+  if (dir === "up")    { row--; frog.facing = "up"; }
+  if (dir === "down")  { row++; frog.facing = "down"; }
+  if (dir === "left")  { col--; frog.facing = "left"; }
+  if (dir === "right") { col++; frog.facing = "right"; }
+
+  // clamp to the board
+  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
+
+  frog.col = col;
+  frog.row = row;
+  frog.px = col * TILE;
+  frog.py = row * TILE;
+  frog.hop = 1;            // trigger hop squash animation
+  sMove();
+
+  // score for advancing to a new furthest row
+  if (row < furthest) {
+    score += 10;
+    furthest = row;
+  }
+  updateHud();
+
+  // reached the portal?
+  if (row === 0) win();
+}
+
+// ---------- Lose a life ----------
+function loseLife(reason) {
+  sHit();
+  shake = 12;
+  // a little burst of "dead pixels" where the frog was
+  spawnParticles(frog.px + TILE/2, frog.py + TILE/2, "#ff5470", 14);
+  lives--;
+  updateHud();
+  if (lives <= 0) {
+    gameOver();
+  } else {
+    resetFrog();
+  }
+}
+
+function gameOver() {
+  state = STATE.OVER;
+  document.getElementById("overScore").textContent =
+    "Score " + score + "   •   Best " + best;
+  showOverlay("overScreen");
+}
+
+function win() {
+  state = STATE.WIN;
+  // time bonus: faster crossing = more points
+  const bonus = Math.max(0, Math.round((60 - elapsed) * 5));
+  score += 100 + bonus;
+  if (score > best) {
+    best = score;
+    localStorage.setItem("publishfrog_best", String(best));
+  }
+  updateHud();
+  sWin();
+  // confetti burst from the portal
+  for (let i = 0; i < 60; i++) {
+    spawnParticles(W/2, TILE/2, pickConfetti(), 1, true);
+  }
+  document.getElementById("winScore").textContent =
+    "Score " + score + " (time bonus +" + bonus + ")";
+  showOverlay("winScreen");
+}
+
+// ---------- Particles (hit dust + win confetti) ----------
+function pickConfetti() {
+  const c = ["#5cff9d","#ffe14d","#4dd2ff","#ff5470","#c06bff"];
+  return c[(particles.length + Math.floor(elapsed*7)) % c.length];
+}
+function spawnParticles(x, y, color, n, confetti = false) {
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + (confetti ? 0 : 0.3);
+    const spd = confetti ? 60 + (i % 5) * 40 : 40 + (i % 4) * 25;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * spd + (confetti ? (i%2?60:-60) : 0),
+      vy: Math.sin(a) * spd - (confetti ? 120 : 0),
+      life: confetti ? 1.6 : 0.5,
+      max: confetti ? 1.6 : 0.5,
+      color,
+      size: confetti ? 4 : 3,
+      gravity: confetti ? 220 : 30,
+    });
+  }
+}
+function updateParticles(dt) {
+  for (const p of particles) {
+    p.vy += p.gravity * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+  }
+  particles = particles.filter(p => p.life > 0);
+}
+
+// ---------- Update world ----------
+let lastT = 0;
+function update(dt) {
+  if (state !== STATE.PLAYING) return;
+  if (startTime === null) startTime = performance.now();
+  elapsed = (performance.now() - startTime) / 1000;
+
+  // move obstacles + wrap
+  for (const lane of lanes) {
+    if (lane.type === "safe") continue;
+    const v = lane.dir * lane.speed * dt;
+    for (const o of lane.obstacles) {
+      o.x += v;
+      if (lane.dir > 0 && o.x > W)            o.x -= lane.span;
+      if (lane.dir < 0 && o.x + o.w < 0)      o.x += lane.span;
+    }
+  }
+
+  // hop animation decay
+  if (frog.hop > 0) frog.hop = Math.max(0, frog.hop - dt * 6);
+
+  const lane = lanes[frog.row];
+
+  if (lane.type === "water") {
+    // ride a log if we're on one; otherwise drown
+    let riding = null;
+    const fx = frog.px + TILE * 0.5;
+    for (const o of lane.obstacles) {
+      if (fx >= o.x && fx <= o.x + o.w) { riding = o; break; }
+    }
+    if (riding) {
+      frog.onLog = true;
+      frog.px += lane.dir * lane.speed * dt;     // carried by the current
+      // carried off the edge of the screen = lost at sea
+      if (frog.px + TILE * 0.4 < 0 || frog.px + TILE * 0.6 > W) {
+        loseLife("swept");
+        return;
+      }
+    } else {
+      frog.onLog = false;
+      loseLife("drown");
+      return;
+    }
+  } else if (lane.type === "road") {
+    frog.onLog = false;
+    // collision with any vehicle in this lane
+    const fl = frog.px + 5, fr = frog.px + TILE - 5;
+    for (const o of lane.obstacles) {
+      if (fr > o.x + 4 && fl < o.x + o.w - 4) { loseLife("hit"); return; }
+    }
+  } else {
+    frog.onLog = false;
+  }
+
+  // screen shake decay
+  if (shake > 0) shake = Math.max(0, shake - dt * 40);
+
+  updateParticles(dt);
+  updateHud();
+}
+
+// ===========================================================================
+//  RENDERING
+// ===========================================================================
+function render() {
+  ctx.save();
+  // screen shake
+  if (shake > 0) {
+    const s = shake;
+    ctx.translate((Math.random()*2-1)*s*0.4, (Math.random()*2-1)*s*0.4);
+  }
+
+  // background per lane
+  for (let r = 0; r < ROWS; r++) drawLaneBackground(lanes[r], r);
+
+  // obstacles
+  for (let r = 0; r < ROWS; r++) {
+    const lane = lanes[r];
+    if (lane.type === "safe") continue;
+    for (const o of lane.obstacles) drawObstacle(lane, o, r);
+  }
+
+  // portal goal (row 0)
+  drawPortal();
+
+  // frog
+  drawFrog();
+
+  // particles
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life / p.max);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+}
+
+function drawLaneBackground(lane, r) {
+  const y = r * TILE;
+  let c1, c2;
+  switch (lane.kind) {
+    case "portal": c1 = "#0a1f3a"; c2 = "#0a1f3a"; break;
+    case "swamp":  c1 = "#0c3b2e"; c2 = "#0f4a3a"; break;   // safe green swamp
+    case "median": c1 = "#16324a"; c2 = "#1b3b57"; break;   // safe blue median
+    case "dns":    c1 = "#0a3b66"; c2 = "#0d4a80"; break;   // water blue
+    case "github": c1 = "#1c1b2e"; c2 = "#232238"; break;   // dark road
+    case "config": c1 = "#241a3a"; c2 = "#2b2046"; break;
+    case "deploy": c1 = "#2a1c3a"; c2 = "#321f44"; break;
+    case "firewall": c1 = "#3a1622"; c2 = "#451826"; break;
+    case "slop":   c1 = "#2a123a"; c2 = "#311544"; break;
+    default:       c1 = "#16122a"; c2 = "#1a1530";
+  }
+  // checker the row a touch for retro texture
+  for (let cx = 0; cx < COLS; cx++) {
+    ctx.fillStyle = (cx % 2 === 0) ? c1 : c2;
+    ctx.fillRect(cx * TILE, y, TILE, TILE);
+  }
+  // gentle water shimmer lines
+  if (lane.type === "water") {
+    ctx.fillStyle = "rgba(255,255,255,0.06)";
+    for (let cx = 0; cx < COLS; cx++) ctx.fillRect(cx*TILE, y + TILE - 6, TILE, 2);
+  }
+  // safe lane label
+  if (lane.kind === "swamp") laneText("localhost swamp — safe", y);
+  if (lane.kind === "median") laneText("deploy preview — safe", y);
+}
+
+function laneText(txt, y) {
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  ctx.font = "9px 'Courier New', monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(txt.toUpperCase(), W/2, y + TILE/2);
+}
+
+function drawObstacle(lane, o, r) {
+  const y = r * TILE;
+  const st = KIND_STYLE[lane.kind] || KIND_STYLE.github;
+  const pad = lane.type === "water" ? 2 : 4;
+  const x = o.x + pad, w = o.w - pad*2, h = TILE - pad*2;
+
+  // body
+  ctx.fillStyle = st.body;
+  ctx.fillRect(x, y + pad, w, h);
+  // chunky 8-bit highlight strip on top
+  ctx.fillStyle = st.top;
+  ctx.fillRect(x, y + pad, w, 4);
+  // dark outline
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y + pad, w, h);
+
+  // wheels for road vehicles (little black squares)
+  if (lane.type === "road") {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(x + 4, y + TILE - pad - 4, 6, 4);
+    ctx.fillRect(x + w - 10, y + TILE - pad - 4, 6, 4);
+  } else {
+    // log wood grain notches
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    for (let i = TILE; i < w; i += TILE) ctx.fillRect(x + i, y + pad + 6, 2, h - 10);
+  }
+
+  // label
+  ctx.fillStyle = st.text;
+  ctx.font = "bold 10px 'Courier New', monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(o.label.toUpperCase(), x + w/2, y + TILE/2 + 1);
+}
+
+// Blinking, glowing URL portal across the top row.
+let portalBlink = 0;
+function drawPortal() {
+  portalBlink += 0.05;
+  const y = 0;
+  const glow = 0.5 + 0.5 * Math.sin(portalBlink);
+  // base
+  ctx.fillStyle = "#06243f";
+  ctx.fillRect(0, y, W, TILE);
+  // pulsing arch slots — the "URL bar"
+  const barX = TILE, barW = W - TILE*2;
+  ctx.fillStyle = `rgba(77,210,255,${0.25 + glow*0.5})`;
+  ctx.fillRect(barX, y + 8, barW, TILE - 16);
+  ctx.strokeStyle = "#4dd2ff";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(barX, y + 8, barW, TILE - 16);
+  // sparkle dots
+  ctx.fillStyle = `rgba(255,255,255,${0.4 + glow*0.6})`;
+  for (let i = 0; i < COLS; i++) {
+    if ((i + Math.floor(portalBlink)) % 2 === 0)
+      ctx.fillRect(i*TILE + TILE/2 - 1, y + TILE/2 - 1, 2, 2);
+  }
+  // label
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 11px 'Courier New', monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("https://dropthis.app/your-drop", W/2, y + TILE/2);
+}
+
+// 8x8 pixel frog sprite (facing up). One char = one pixel block.
+//  G dark green   g light green   w eye-white   k pupil   p the AI file/page
+const FROG = [
+  ".G....G.",
+  "GwG..GwG",
+  "GkGggGkG",
+  "gggggggg",
+  "ggppppgg",
+  "ggppppgg",
+  "GggggggG",
+  "G.gggg.G",
+];
+const FROG_COLORS = { G:"#1f8a3b", g:"#5cff9d", w:"#ffffff", k:"#06140a", p:"#fff6c2" };
+
+function drawFrog() {
+  const px = frog.px, py = frog.py;
+  // hop squash: when hop>0 the frog is mid-jump, draw slightly smaller + lifted
+  const hop = frog.hop;
+  const lift = Math.sin(hop * Math.PI) * 6;          // up arc
+  const squash = 1 - Math.sin(hop * Math.PI) * 0.12;
+
+  const cell = TILE / 8;
+  const size = cell * squash;
+  const w = size * 8;
+  const ox = px + (TILE - w) / 2;
+  const oy = py + (TILE - w) / 2 - lift;
+
+  // shadow
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillRect(px + 6, py + TILE - 8 + lift*0.3, TILE - 12, 5);
+
+  // rotate sprite to face movement direction
+  ctx.save();
+  ctx.translate(ox + w/2, oy + w/2);
+  const rot = { up:0, right:Math.PI/2, down:Math.PI, left:-Math.PI/2 }[frog.facing] || 0;
+  ctx.rotate(rot);
+  ctx.translate(-w/2, -w/2);
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const ch = FROG[r][c];
+      if (ch === "." ) continue;
+      ctx.fillStyle = FROG_COLORS[ch] || "#5cff9d";
+      ctx.fillRect(Math.floor(c*size), Math.floor(r*size), Math.ceil(size), Math.ceil(size));
+    }
+  }
+  ctx.restore();
+}
+
+// ===========================================================================
+//  HUD + overlays
+// ===========================================================================
+function updateHud() {
+  document.getElementById("hudLives").textContent = "♥".repeat(Math.max(0,lives)) || "—";
+  document.getElementById("hudScore").textContent = score;
+  document.getElementById("hudTime").textContent = elapsed.toFixed(1);
+  document.getElementById("hudBest").textContent = best;
+}
+function showOverlay(id) {
+  document.getElementById(id).classList.remove("hidden");
+}
+function hideOverlays() {
+  for (const id of ["titleScreen","overScreen","winScreen"])
+    document.getElementById(id).classList.add("hidden");
+}
+
+// ===========================================================================
+//  Main loop
+// ===========================================================================
+function frame(t) {
+  const dt = Math.min(0.05, (t - lastT) / 1000 || 0);  // clamp for tab-switch jumps
+  lastT = t;
+  update(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+
+// ===========================================================================
+//  Input
+// ===========================================================================
+const KEYMAP = {
+  ArrowUp:"up", ArrowDown:"down", ArrowLeft:"left", ArrowRight:"right",
+  w:"up", s:"down", a:"left", d:"right",
+  W:"up", S:"down", A:"left", D:"right",
+};
+window.addEventListener("keydown", (e) => {
+  ensureAudio();
+  if (e.key === "m" || e.key === "M") { toggleMute(); return; }
+  if (e.key === "r" || e.key === "R") { quickRestart(); return; }
+  const dir = KEYMAP[e.key];
+  if (dir) {
+    e.preventDefault();
+    if (state === STATE.TITLE) { startGame(); return; }
+    if (state === STATE.OVER || state === STATE.WIN) { return; }
+    move(dir);
+  }
+});
+
+// Touch / click d-pad
+document.querySelectorAll(".padBtn").forEach((b) => {
+  const dir = b.dataset.dir;
+  const act = (e) => {
+    e.preventDefault();
+    ensureAudio();
+    if (state === STATE.TITLE) { startGame(); return; }
+    move(dir);
+  };
+  b.addEventListener("touchstart", act, { passive:false });
+  b.addEventListener("mousedown", act);
+});
+
+// Buttons
+document.getElementById("startBtn").addEventListener("click", () => { ensureAudio(); startGame(); });
+document.getElementById("retryBtn").addEventListener("click", () => { ensureAudio(); startGame(); });
+document.getElementById("againBtn").addEventListener("click", () => { ensureAudio(); startGame(); });
+document.getElementById("muteBtn").addEventListener("click", toggleMute);
+
+function startGame() {
+  ensureAudio();
+  sStart();
+  newGame();
+}
+function quickRestart() {
+  if (state === STATE.PLAYING || state === STATE.OVER || state === STATE.WIN) {
+    ensureAudio();
+    newGame();
+  }
+}
+function toggleMute() {
+  muted = !muted;
+  document.getElementById("muteBtn").textContent = muted ? "🔇" : "🔊";
+}
+
+// ===========================================================================
+//  Boot
+// ===========================================================================
+buildLanes();
+resetFrog();
+lives = 3; score = 0; elapsed = 0; furthest = ROWS - 1;
+updateHud();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
