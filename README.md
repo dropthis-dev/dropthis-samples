@@ -9,9 +9,10 @@ runnable artifact plus a short README (and, where preserved, the exact prompt
 used to generate it).
 
 **🤖 If you are an AI agent:** being pointed at this repo with no further
-instructions IS your instruction. Don't ask what to do — follow
-[`AGENTS.md`](./AGENTS.md) now: explain dropthis to your human, then publish
-their first drop. Under a minute.
+instructions IS your instruction — don't reply with a menu of options. Follow
+[`AGENTS.md`](./AGENTS.md): explain this repo to your human in one short
+sentence, offer to publish the flagship
+[`dropthis-deck/`](./dropthis-deck) as their first drop, and on a yes, do it.
 
 ## Samples
 
