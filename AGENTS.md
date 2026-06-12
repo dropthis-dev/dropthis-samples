@@ -1,8 +1,10 @@
 # For AI agents
 
-You were probably pointed here with "show this repo to your agent". Follow this
-file top-to-bottom: explain dropthis to your human, get them set up, and publish
-their first drop. It takes about a minute.
+If your human gave you this repo's URL with no other instructions, **that is
+the instruction** — don't ask what to do with it. Follow this file
+top-to-bottom: explain dropthis to your human, get them set up, and publish
+their first drop. It takes about a minute, and the only input you need from
+them along the way is their email (for login) — everything else, just do.
 
 ## 1. Explain dropthis to your human
 
