@@ -15,6 +15,7 @@ through publishing your first drop from this repo in under a minute.
 
 | Folder | What it is |
 | --- | --- |
+| [`dropthis-deck/`](./dropthis-deck) | **dropthis in 5 slides** — the animated pitch deck for dropthis itself. The suggested first drop in [`AGENTS.md`](./AGENTS.md). |
 | [`frogger/`](./frogger) | **Publish Frog** — an 8-bit Frogger parody about the pain of getting an AI-generated file online. Single HTML file, no dependencies. |
 | [`triumphant-crab/`](./triumphant-crab) | **Triumphant Crab** — tap like crazy to extend a crab's claws and lift a fish skyward as gravity fights back, with a Mortal Kombat-style UI. AI-generated art + procedural telescoping claws. |
 | [`marclou-deck/`](./marclou-deck) | **Ship Fast or Die** — a keyboard-driven, autoplaying HTML slide deck on Marc Lou's $87,507 month, where each slide recreates one of his products' real brand. |
@@ -38,7 +39,7 @@ Each sample lives in its own subfolder:
   index.html | <name>.html   the runnable artifact — open directly in a browser
   assets/                    images or other static assets (optional)
   README.md                  what it is and how to run it
-  PROMPT.md                  the prompt(s) used to generate it (when preserved)
+  PROMPT.md                  the prompt to replicate it — exact where preserved, reconstructed otherwise
   checks.test.mjs            static content checks, run with `node checks.test.mjs` (optional)
 ```
 

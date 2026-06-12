@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>dropthis — the publish button for AI</title>
+<meta name="description" content="dropthis in 5 slides. One command in, one URL out.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400;1,6..72,500&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0a09;
+    --bg-raise:#141413;
+    --ink:#fafaf9;
+    --ink-dim:#8d8881;
+    --ink-faint:#5e5a54;
+    --line:#1b1a18;
+    --accent:#38bdf8;
+    --accent-soft:rgba(56,189,248,.16);
+    --ease-out:cubic-bezier(.23,1,.32,1);
+    --ease-in-out:cubic-bezier(.77,0,.175,1);
+    --serif:"Newsreader",Georgia,serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--serif);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* ── atmosphere ───────────────────────────── */
+  .grain{
+    position:fixed;inset:-50%;z-index:4;pointer-events:none;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .04 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grain 9s steps(6) infinite;
+  }
+  @keyframes grain{
+    0%,100%{transform:translate(0,0)}
+    20%{transform:translate(-4%,3%)}
+    40%{transform:translate(3%,-2%)}
+    60%{transform:translate(-2%,-4%)}
+    80%{transform:translate(4%,2%)}
+  }
+  .glow{
+    position:fixed;z-index:0;pointer-events:none;
+    top:0;left:0;width:90vmin;height:90vmin;border-radius:50%;
+    background:radial-gradient(closest-side,var(--accent-soft),transparent 70%);
+    transform:translate(80vw,-10vh) translate(-50%,-50%);
+    transition:transform 1.2s var(--ease-in-out),opacity 1.2s ease;
+  }
+
+  /* ── chrome ───────────────────────────────── */
+  header{
+    position:fixed;z-index:3;top:0;left:0;right:0;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:calc(env(safe-area-inset-top, 0px) + 20px) 28px 0;
+    font-family:var(--mono);font-size:12px;letter-spacing:.04em;
+  }
+  .wordmark{color:var(--ink);text-decoration:none;font-weight:700}
+  .wordmark i{color:var(--accent);font-style:normal}
+  .counter{color:var(--ink-faint);font-variant-numeric:tabular-nums}
+
+  footer{
+    position:fixed;z-index:3;bottom:0;left:0;right:0;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:0 28px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+  .dots{display:flex;gap:10px}
+  .dot{
+    width:28px;height:24px;border:0;background:none;cursor:pointer;position:relative;padding:0
+  }
+  .dot::after{
+    content:"";position:absolute;left:0;top:11px;height:2px;width:100%;
+    background:var(--line);transition:background .2s ease,transform .2s var(--ease-out);
+  }
+  .dot[aria-current="true"]::after{background:var(--accent);transform:scaleY(1.6)}
+  @media (hover:hover) and (pointer:fine){
+    .dot:hover::after{background:var(--ink-dim)}
+    .dot[aria-current="true"]:hover::after{background:var(--accent)}
+  }
+  .hint{
+    font-family:var(--mono);font-size:11px;color:var(--ink-faint);
+    transition:opacity .6s ease;white-space:nowrap;
+  }
+  .hint kbd{
+    font-family:inherit;border:1px solid var(--line);border-bottom-width:2px;
+    border-radius:4px;padding:1px 5px;margin:0 1px;color:var(--ink-dim);
+  }
+  .hint.gone{opacity:0}
+  @media (max-width:640px){ .hint{display:none} }
+
+  /* ── slides ───────────────────────────────── */
+  main{position:relative;height:100dvh;z-index:1}
+  .slide{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:96px clamp(24px,7vw,96px);
+    visibility:hidden;pointer-events:none;
+  }
+  .slide.active{visibility:visible;pointer-events:auto}
+
+  /* element entrances: staggered, ease-out, slight blur to mask the crossfade */
+  .slide [data-r]{
+    opacity:0;transform:translateY(16px);filter:blur(6px);
+    transition:opacity .55s var(--ease-out),transform .55s var(--ease-out),filter .55s var(--ease-out);
+    transition-delay:var(--d,0ms);
+  }
+  .slide.active [data-r]{opacity:1;transform:translateY(0);filter:blur(0)}
+  .slide.leaving [data-r]{
+    opacity:0;transform:translateY(-10px);filter:blur(4px);
+    transition-duration:.18s;transition-delay:0ms;transition-timing-function:ease;
+  }
+
+  .eyebrow{
+    font-family:var(--mono);font-size:clamp(11px,1.3vw,13px);font-weight:500;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+    margin-bottom:clamp(18px,3vh,30px);
+  }
+  .eyebrow::before{content:"";display:inline-block;width:22px;height:1px;background:var(--accent);vertical-align:middle;margin-right:12px}
+  h1{
+    font-weight:300;line-height:1.02;letter-spacing:-.015em;
+    font-size:clamp(40px,8.2vw,104px);
+    max-width:14ch;text-wrap:balance;
+  }
+  h1 em{font-style:italic;font-weight:400;color:var(--accent)}
+  .sub{
+    margin-top:clamp(20px,3.5vh,34px);
+    font-size:clamp(17px,2.1vw,23px);font-weight:300;line-height:1.55;
+    color:var(--ink-dim);max-width:52ch;text-wrap:pretty;
+  }
+  .sub strong{color:var(--ink);font-weight:400}
+  .sub code{font-family:var(--mono);font-size:.82em;color:var(--ink);background:var(--bg-raise);border:1px solid var(--line);border-radius:5px;padding:2px 7px;white-space:nowrap}
+
+  /* slide 2 — the graveyard */
+  .graveyard{
+    display:flex;flex-wrap:wrap;gap:10px;margin-top:clamp(24px,4vh,40px);max-width:660px;
+  }
+  .tomb{
+    font-family:var(--mono);font-size:clamp(11px,1.4vw,13px);
+    color:var(--ink-faint);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;background:var(--bg-raise);
+    text-decoration:line-through;text-decoration-color:rgba(141,136,129,.5);
+    transition-property:opacity,transform,filter;
+  }
+  .slide.active .tomb{opacity:.75}
+
+  /* slide 3 — the terminal */
+  .term{
+    margin-top:clamp(26px,4.5vh,44px);
+    width:min(640px,100%);
+    background:#0e0d0c;border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 24px 70px -28px rgba(0,0,0,.85),0 0 0 1px rgba(250,250,249,.02) inset;
+    font-family:var(--mono);font-size:clamp(13px,1.7vw,15.5px);line-height:1.7;
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:7px;
+    padding:11px 14px;border-bottom:1px solid var(--line);
+  }
+  .term-bar b{width:10px;height:10px;border-radius:50%;background:var(--line)}
+  .term-bar span{margin-left:auto;font-size:11px;color:var(--ink-faint)}
+  .term-body{padding:18px 20px 22px;min-height:7.2em}
+  .term-line{display:block;white-space:nowrap;overflow:hidden}
+  .prompt{color:var(--ink-faint)}
+  .cmd{color:var(--ink)}
+  .cmd .flag{color:var(--ink-dim)}
+  .caret{
+    display:inline-block;width:.55em;height:1.15em;vertical-align:text-bottom;
+    background:var(--accent);animation:blink 1.06s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0}}
+  .term-status{color:var(--ink-faint);opacity:0;transition:opacity .3s ease}
+  .term-status.on{opacity:1}
+  .term-url{
+    margin-top:.45em;color:var(--accent);font-weight:500;
+    clip-path:inset(0 100% 0 0);transition:clip-path .8s var(--ease-out);
+  }
+  .term-url.on{clip-path:inset(0 0 0 0)}
+  .term-url::before{content:"→ ";color:var(--ink-faint);font-weight:400}
+
+  /* slide 4 — surfaces */
+  .surfaces{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:12px;margin-top:clamp(26px,4.5vh,44px);max-width:980px;
+  }
+  .surface{
+    border:1px solid var(--line);border-radius:12px;background:var(--bg-raise);
+    padding:18px 18px 16px;
+    transition-property:opacity,transform,filter,border-color;
+  }
+  @media (hover:hover) and (pointer:fine){
+    .surface:hover{border-color:#2a2826}
+  }
+  .surface h3{
+    font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.02em;
+    display:flex;align-items:baseline;gap:8px;margin-bottom:8px;
+  }
+  .surface h3 i{color:var(--accent);font-style:normal}
+  .surface p{font-size:14.5px;font-weight:300;color:var(--ink-dim);line-height:1.55;margin-bottom:12px}
+  .surface code{
+    display:block;font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);
+    background:var(--bg);border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;line-height:1.6;word-break:break-word;
+  }
+  .surface code b{color:var(--ink);font-weight:400}
+
+  /* slide 5 — CTA */
+  .cta-block{margin-top:clamp(26px,4.5vh,44px);display:flex;flex-direction:column;gap:14px;max-width:720px}
+  .cta{
+    font-family:var(--mono);font-size:clamp(13px,1.9vw,17px);
+    border:1px solid var(--line);border-radius:10px;background:var(--bg-raise);
+    padding:15px 18px;color:var(--ink);text-decoration:none;
+    display:flex;align-items:center;gap:12px;
+    transition:transform .16s var(--ease-out),border-color .2s ease;
+  }
+  .cta:active{transform:scale(.985)}
+  @media (hover:hover) and (pointer:fine){
+    .cta:hover{border-color:var(--accent);}
+  }
+  .cta i{font-style:normal;color:var(--accent)}
+  .cta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .say{
+    font-size:clamp(16px,2vw,20px);color:var(--ink-dim);font-weight:300;line-height:1.6;
+  }
+  .say em{color:var(--ink);font-weight:400}
+  .colophon{
+    margin-top:clamp(18px,3vh,28px);font-family:var(--mono);
+    font-size:11.5px;color:var(--ink-faint);letter-spacing:.03em;
+  }
+  .colophon i{font-style:normal;color:var(--accent)}
+
+  @media (max-width:640px){
+    .slide{padding:84px 24px 110px}
+    h1{font-size:clamp(36px,11vw,52px)}
+    .term-body{min-height:8.4em}
+    .term-line{white-space:normal;word-break:break-all}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .grain{animation:none}
+    .slide [data-r],.slide.leaving [data-r]{transform:none;filter:none;transition:opacity .25s ease;transition-delay:0ms}
+    .term-url{transition:none}
+    .caret{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="glow" id="glow"></div>
+<div class="grain"></div>
+
+<header>
+  <a class="wordmark" href="https://dropthis.app">dropthis<i>.</i></a>
+  <span class="counter" id="counter">1 / 5</span>
+</header>
+
+<main id="deck" aria-live="polite">
+
+  <!-- 1 ── hook -->
+  <section class="slide" data-glow="82vw -8vh">
+    <p class="eyebrow" data-r style="--d:0ms">dropthis, in five slides</p>
+    <h1 data-r style="--d:70ms">Your agent makes <em>brilliant</em> things.</h1>
+    <p class="sub" data-r style="--d:150ms">Pages, decks, games, dashboards, reports — generated in seconds,
+      polished beyond what most humans ship. AI is already the web's most prolific designer.</p>
+  </section>
+
+  <!-- 2 ── problem -->
+  <section class="slide" data-glow="-5vw 95vh">
+    <p class="eyebrow" data-r style="--d:0ms">then, nothing</p>
+    <h1 data-r style="--d:70ms">And they die on <em>localhost</em>.</h1>
+    <p class="sub" data-r style="--d:150ms">Publishing still demands 2006 knowledge — DNS, buckets, builds,
+      deploys. Your agent has none of it. So the best work never gets a URL.</p>
+    <div class="graveyard" aria-hidden="true">
+      <span class="tomb" data-r style="--d:240ms">quarterly-report.html</span>
+      <span class="tomb" data-r style="--d:290ms">pitch-deck.html</span>
+      <span class="tomb" data-r style="--d:340ms">asteroids.html</span>
+      <span class="tomb" data-r style="--d:390ms">landing-v3.html</span>
+      <span class="tomb" data-r style="--d:440ms">research-brief.html</span>
+      <span class="tomb" data-r style="--d:490ms">birthday-card.html</span>
+    </div>
+  </section>
+
+  <!-- 3 ── the move -->
+  <section class="slide" data-glow="88vw 85vh">
+    <p class="eyebrow" data-r style="--d:0ms">the publish button</p>
+    <h1 data-r style="--d:70ms">One command in. One <em>URL</em> out.</h1>
+    <div class="term" data-r style="--d:170ms">
+      <div class="term-bar"><b></b><b></b><b></b><span>agent — zsh</span></div>
+      <div class="term-body">
+        <span class="term-line"><span class="prompt">$ </span><span class="cmd" id="typed"></span><span class="caret" id="caret"></span></span>
+        <span class="term-line term-status" id="status">uploading · 1 file · 12 kB</span>
+        <span class="term-line term-url" id="url">https://dropthis.app/d/first-drop</span>
+      </div>
+    </div>
+    <p class="sub" data-r style="--d:260ms">No git. No build step. No config. The URL is permanent and live
+      before your agent finishes the sentence.</p>
+  </section>
+
+  <!-- 4 ── surfaces -->
+  <section class="slide" data-glow="12vw -8vh">
+    <p class="eyebrow" data-r style="--d:0ms">made for agents</p>
+    <h1 data-r style="--d:70ms">Wherever your agent <em>lives</em>.</h1>
+    <div class="surfaces">
+      <div class="surface" data-r style="--d:170ms">
+        <h3><i>01</i> CLI</h3>
+        <p>One flag for scripts, exit codes for agents.</p>
+        <code>dropthis ./page.html <b>--url</b></code>
+      </div>
+      <div class="surface" data-r style="--d:230ms">
+        <h3><i>02</i> Node SDK</h3>
+        <p>Stripe-style resources, typed end to end.</p>
+        <code>client.drops.<b>publish</b>(html)</code>
+      </div>
+      <div class="surface" data-r style="--d:290ms">
+        <h3><i>03</i> MCP server</h3>
+        <p>Typed tools for Claude, Cursor, ChatGPT, n8n.</p>
+        <code>dropthis_<b>publish</b></code>
+      </div>
+      <div class="surface" data-r style="--d:350ms">
+        <h3><i>04</i> Agent skills</h3>
+        <p>Installable know-how, kept current.</p>
+        <code>…/.well-known/<b>agent-skills</b></code>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 ── CTA -->
+  <section class="slide" data-glow="50vw 108vh">
+    <p class="eyebrow" data-r style="--d:0ms">try it now</p>
+    <h1 data-r style="--d:70ms">Point your <em>agent</em> here.</h1>
+    <div class="cta-block">
+      <a class="cta" data-r style="--d:170ms" href="https://github.com/dropthis-dev/dropthis-samples" target="_blank" rel="noopener">
+        <i>↗</i><span>github.com/dropthis-dev/dropthis-samples</span>
+      </a>
+      <p class="say" data-r style="--d:240ms">Then say: <em>“read AGENTS.md and publish my first drop.”</em><br>
+      Your agent will explain dropthis, log you in, and hand you a live URL.</p>
+    </div>
+    <p class="colophon" data-r style="--d:330ms">this deck is itself a drop — published with one command <i>·</i> dropthis.app</p>
+  </section>
+
+</main>
+
+<footer>
+  <nav class="dots" id="dots" aria-label="Slides"></nav>
+  <p class="hint" id="hint"><kbd>←</kbd><kbd>→</kbd> or <kbd>space</kbd> to navigate</p>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var dots=document.getElementById('dots');
+  var counter=document.getElementById('counter');
+  var hint=document.getElementById('hint');
+  var glow=document.getElementById('glow');
+  var N=slides.length, cur=-1, leaveTimer=null;
+  var reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  slides.forEach(function(_,i){
+    var b=document.createElement('button');
+    b.className='dot';b.setAttribute('aria-label','Slide '+(i+1));
+    b.addEventListener('click',function(){go(i);dismissHint();});
+    dots.appendChild(b);
+  });
+  var dotEls=[].slice.call(dots.children);
+
+  function go(i){
+    i=Math.max(0,Math.min(N-1,i));
+    if(i===cur)return;
+    var prev=cur;cur=i;
+    if(prev>=0){
+      var old=slides[prev];
+      old.classList.add('leaving');old.classList.remove('active');
+      clearTimeout(leaveTimer);
+      leaveTimer=setTimeout(function(){old.classList.remove('leaving');old.style.visibility='';},200);
+      old.style.visibility='visible';
+    }
+    slides[cur].classList.add('active');
+    dotEls.forEach(function(d,k){d.setAttribute('aria-current',k===cur?'true':'false');});
+    counter.textContent=(cur+1)+' / '+N;
+    var pos=(slides[cur].dataset.glow||'80vw -10vh').split(' ');
+    glow.style.transform='translate('+pos[0]+','+pos[1]+') translate(-50%,-50%)';
+    if(history.replaceState)history.replaceState(null,'','#'+(cur+1));
+    if(cur===2)runTerminal();
+  }
+
+  /* ── terminal animation (slide 3) ── */
+  var typed=document.getElementById('typed');
+  var caret=document.getElementById('caret');
+  var statusEl=document.getElementById('status');
+  var urlEl=document.getElementById('url');
+  var CMD=[['dropthis ',''],['./page.html ',''],['--url','flag']];
+  var termToken=0;
+  function runTerminal(){
+    var token=++termToken;
+    typed.innerHTML='';statusEl.classList.remove('on');urlEl.classList.remove('on');
+    if(reduced){
+      renderAll();statusEl.classList.add('on');urlEl.classList.add('on');return;
+    }
+    var seq=[];
+    CMD.forEach(function(part){
+      for(var c=0;c<part[0].length;c++)seq.push([part[0][c],part[1]]);
+    });
+    var k=0;
+    (function tick(){
+      if(token!==termToken)return;
+      if(k<seq.length){
+        var ch=seq[k][0],cls=seq[k][1];
+        if(cls){
+          var last=typed.lastElementChild;
+          if(!last||last.className!==cls){last=document.createElement('span');last.className=cls;typed.appendChild(last);}
+          last.textContent+=ch;
+        }else{
+          typed.appendChild(document.createTextNode(ch));
+        }
+        k++;setTimeout(tick,22+Math.random()*34);
+      }else{
+        setTimeout(function(){
+          if(token!==termToken)return;
+          statusEl.classList.add('on');
+          setTimeout(function(){
+            if(token!==termToken)return;
+            statusEl.textContent='✓ published in 0.8s';
+            urlEl.classList.add('on');
+          },900);
+        },350);
+      }
+    })();
+  }
+  function renderAll(){
+    typed.innerHTML='';
+    CMD.forEach(function(part){
+      if(part[1]){var s=document.createElement('span');s.className=part[1];s.textContent=part[0];typed.appendChild(s);}
+      else typed.appendChild(document.createTextNode(part[0]));
+    });
+  }
+
+  /* ── input ── */
+  function next(){go(cur+1)}function prev(){go(cur-1)}
+  function dismissHint(){hint.classList.add('gone')}
+
+  addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'||e.key==='j'){e.preventDefault();next();dismissHint();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'||e.key==='k'){e.preventDefault();prev();dismissHint();}
+    else if(e.key==='Home'){e.preventDefault();go(0);}
+    else if(e.key==='End'){e.preventDefault();go(N-1);}
+  });
+
+  /* swipe with velocity (flick = enough) */
+  var tx=null,ty=null,t0=0;
+  addEventListener('touchstart',function(e){
+    if(e.touches.length>1)return;
+    tx=e.touches[0].clientX;ty=e.touches[0].clientY;t0=Date.now();
+  },{passive:true});
+  addEventListener('touchend',function(e){
+    if(tx===null)return;
+    var dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+    var dt=Math.max(1,Date.now()-t0), v=Math.abs(dx)/dt;
+    if(Math.abs(dx)>Math.abs(dy)&&(Math.abs(dx)>56||v>0.3)){ dx<0?next():prev();dismissHint(); }
+    tx=ty=null;
+  },{passive:true});
+
+  var h=parseInt((location.hash||'').slice(1),10);
+  go(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
