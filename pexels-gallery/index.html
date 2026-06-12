@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Field Notes — a Pexels photo wall</title>
+<meta name="description" content="A single-file masonry photo gallery with lightbox — images served from the Pexels CDN.">
+<style>
+  :root{
+    --bg:#100f0d;
+    --ink:#f3efe9;
+    --ink-dim:#9a938a;
+    --line:#26231f;
+    --accent:#d9a441;
+    --serif:Georgia,'Times New Roman',serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--ink);font-family:var(--serif);
+    -webkit-font-smoothing:antialiased;min-height:100dvh;
+  }
+  header{
+    max-width:1280px;margin:0 auto;padding:56px 24px 28px;
+    display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  }
+  h1{font-weight:400;font-size:clamp(28px,4.5vw,44px);letter-spacing:-.01em}
+  h1 em{font-style:italic;color:var(--accent)}
+  .meta{color:var(--ink-dim);font-size:14px;font-style:italic}
+  .meta a{color:var(--ink-dim)}
+
+  .wall{
+    max-width:1280px;margin:0 auto;padding:0 24px 64px;
+    columns:4 260px;column-gap:14px;
+  }
+  figure{
+    break-inside:avoid;margin:0 0 14px;position:relative;border-radius:10px;overflow:hidden;
+    background:var(--line);cursor:zoom-in;
+    opacity:0;transform:translateY(14px);
+    transition:opacity .6s cubic-bezier(.23,1,.32,1),transform .6s cubic-bezier(.23,1,.32,1);
+    transition-delay:var(--d,0ms);
+  }
+  figure.in{opacity:1;transform:none}
+  figure img{display:block;width:100%;height:auto}
+  figure::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(to top,rgba(16,15,13,.55),transparent 38%);
+    opacity:0;transition:opacity .25s ease;
+  }
+  figcaption{
+    position:absolute;left:12px;bottom:10px;z-index:1;
+    font-size:12.5px;font-style:italic;color:var(--ink);
+    opacity:0;transform:translateY(4px);
+    transition:opacity .25s ease,transform .25s cubic-bezier(.23,1,.32,1);
+  }
+  @media (hover:hover) and (pointer:fine){
+    figure:hover::after{opacity:1}
+    figure:hover figcaption{opacity:1;transform:none}
+  }
+
+  footer{
+    max-width:1280px;margin:0 auto;padding:0 24px 56px;
+    color:var(--ink-dim);font-size:13px;font-style:italic;
+  }
+  footer a{color:var(--accent)}
+
+  /* lightbox */
+  dialog{
+    border:0;padding:0;background:transparent;max-width:none;max-height:none;
+    width:100vw;height:100dvh;outline:none;
+  }
+  dialog::backdrop{background:rgba(16,15,13,.92);backdrop-filter:blur(10px)}
+  .lb{
+    width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:14px;padding:32px;cursor:zoom-out;
+  }
+  .lb img{
+    max-width:min(1400px,94vw);max-height:82dvh;border-radius:8px;
+    box-shadow:0 30px 90px -20px rgba(0,0,0,.9);
+  }
+  .lb p{color:var(--ink-dim);font-size:13px;font-style:italic}
+  .lb p a{color:var(--accent)}
+
+  @media (prefers-reduced-motion:reduce){
+    figure{transition:opacity .25s ease;transform:none;transition-delay:0ms}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Field <em>Notes</em></h1>
+  <p class="meta">a photo wall in one HTML file · images from <a href="https://www.pexels.com" rel="noopener">Pexels</a></p>
+</header>
+
+<main class="wall" id="wall"></main>
+
+<footer>
+  Click any photo to view it large. Esc or click to close ·
+  published with <a href="https://dropthis.app" rel="noopener">dropthis</a>
+</footer>
+
+<dialog id="box">
+  <div class="lb" id="lb">
+    <img id="lbImg" alt="">
+    <p id="lbCap"></p>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  'use strict';
+  var IDS=[346529,414612,1366919,1287145,2387873,3408744,1761279,2014422,1107717,248797,460621,1591373,462162,1366630,235621,572897,326058,1323550];
+  var wall=document.getElementById('wall');
+  var box=document.getElementById('box');
+  var lbImg=document.getElementById('lbImg');
+  var lbCap=document.getElementById('lbCap');
+
+  function src(id,w){return 'https://images.pexels.com/photos/'+id+'/pexels-photo-'+id+'.jpeg?auto=compress&cs=tinysrgb&w='+w}
+
+  IDS.forEach(function(id,i){
+    var fig=document.createElement('figure');
+    fig.style.setProperty('--d',(i%8)*45+'ms');
+    var img=document.createElement('img');
+    img.loading='lazy';img.decoding='async';
+    img.src=src(id,600);
+    img.alt='Pexels photo '+id;
+    var cap=document.createElement('figcaption');
+    cap.textContent='pexels #'+id;
+    fig.appendChild(img);fig.appendChild(cap);
+    fig.addEventListener('click',function(){
+      lbImg.src=src(id,1600);
+      lbImg.alt=img.alt;
+      lbCap.innerHTML='pexels #'+id+' · <a href="https://www.pexels.com/photo/'+id+'/" rel="noopener" target="_blank">view on Pexels</a>';
+      box.showModal();
+    });
+    wall.appendChild(fig);
+  });
+
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});
+  },{rootMargin:'80px'});
+  document.querySelectorAll('figure').forEach(function(f){io.observe(f)});
+
+  document.getElementById('lb').addEventListener('click',function(e){
+    if(e.target.tagName!=='A')box.close();
+  });
+})();
+</script>
+</body>
+</html>

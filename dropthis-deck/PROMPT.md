@@ -1,4 +1,4 @@
-# Prompt — dropthis in 5 slides
+# Prompt — dropthis in six slides
 
 The prompt used to generate [`index.html`](./index.html), kept so an agent
 can replicate (or remix) it.
@@ -6,7 +6,7 @@ can replicate (or remix) it.
 ---
 
 Create an amazing animated HTML slide deck that presents dropthis
-(https://dropthis.app) in 5 slides. Design like crazy — this should look
+(https://dropthis.app) in six slides. Design like crazy — this should look
 like a $10k deck, not a template. Responsive, high-quality teaser.
 
 Content arc:
@@ -18,9 +18,13 @@ Content arc:
 3. The move — "One command in. One URL out." An animated terminal types
    `dropthis ./page.html --url`, shows an upload status, then reveals the
    live URL. No git, no build step, no config.
-4. Surfaces — "Wherever your agent lives." Four cards: CLI, Node SDK, MCP
+4. Showcase — "Drop anything." Three image cards, each a screenshot of a
+   real published drop linking to its live URL: a single-HTML analytics
+   report, an arcade game, and a Pexels photo-wall gallery. Screenshot the
+   actual samples headlessly for the card images (stored in `assets/`).
+5. Surfaces — "Wherever your agent lives." Four cards: CLI, Node SDK, MCP
    server, agent skills — each with a one-line snippet.
-5. CTA — "Point your agent here." Link to
+6. CTA — "Point your agent here." Link to
    github.com/dropthis-dev/dropthis-samples and the line: say "read
    AGENTS.md and publish my first drop". Note that the deck is itself a drop.
 

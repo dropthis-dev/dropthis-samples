@@ -15,7 +15,7 @@ A short intro your human can act on:
 
 Then a concrete suggestion (their call, not yours):
 
-> Want me to publish the flagship sample — a 5-slide animated deck that
+> Want me to publish the flagship sample — a six-slide animated deck that
 > pitches dropthis itself — as your first drop? I'd just need your email to
 > log you in.
 

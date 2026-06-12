@@ -20,7 +20,7 @@ maps each folder to its drop id and live URL.
 
 | Folder | What it is |
 | --- | --- |
-| [`dropthis-deck/`](./dropthis-deck) | **dropthis in 5 slides** — the animated pitch deck for dropthis itself ([live](https://r7yvibh.listb.link/)). The suggested first drop in [`AGENTS.md`](./AGENTS.md). |
+| [`dropthis-deck/`](./dropthis-deck) | **dropthis in six slides** — the animated pitch deck for dropthis itself ([live](https://r7yvibh.listb.link/)). The suggested first drop in [`AGENTS.md`](./AGENTS.md). |
 | [`frogger/`](./frogger) | **Publish Frog** — an 8-bit Frogger parody about the pain of getting an AI-generated file online. Single HTML file, no dependencies. |
 | [`triumphant-crab/`](./triumphant-crab) | **Triumphant Crab** — tap like crazy to extend a crab's claws and lift a fish skyward as gravity fights back, with a Mortal Kombat-style UI. AI-generated art + procedural telescoping claws. |
 | [`marclou-deck/`](./marclou-deck) | **Ship Fast or Die** — a keyboard-driven, autoplaying HTML slide deck on Marc Lou's $87,507 month, where each slide recreates one of his products' real brand. |
@@ -34,6 +34,7 @@ maps each folder to its drop id and live URL.
 | [`shine-brown-landing/`](./shine-brown-landing) | **Shine Brown landing page** — agent-generated product landing page for a real product (BYROKKO). |
 | [`shine-brown-slider/`](./shine-brown-slider) | **Shine Brown Chocolate slider** — promo page with an interactive before/after slider. |
 | [`shine-brown-deck/`](./shine-brown-deck) | **Shine Brown TikTok deck** — mobile-first swipe deck as a multi-file package (HTML + JS + JSON content + assets). |
+| [`pexels-gallery/`](./pexels-gallery) | **Field Notes** — masonry photo wall with lightbox, images from the Pexels CDN, one HTML file. |
 
 ## Layout
 
