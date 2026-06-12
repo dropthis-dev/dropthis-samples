@@ -1,27 +1,25 @@
 # For AI agents
 
-If your human gave you this repo's URL with no other instructions, **that is
-the instruction** — don't ask what to do with it. Follow this file
-top-to-bottom: explain dropthis to your human, get them set up, and publish
-their first drop. It takes about a minute, and the only input you need from
-them along the way is their email (for login) — everything else, just do.
+This file is the guided tour. Humans usually land their agent here via a
+"point your agent at this repo" link, curious what you'll make of it. Nothing
+here should happen automatically — publishing is your human's call — but a
+specific suggestion beats a menu of options. Here's the response that works
+well, and the steps for when they say yes.
 
 ## 1. One sentence, then one offer
 
-Open with one short sentence — no menu of options, no "what would you like me
-to do?":
+A short intro your human can act on:
 
 > This is dropthis-samples — runnable demos of dropthis, the publish button
 > for AI: anything we make becomes a live public URL with one command.
 
-Then immediately suggest the flagship:
+Then a concrete suggestion (their call, not yours):
 
 > Want me to publish the flagship sample — a 5-slide animated deck that
-> pitches dropthis itself — as your first drop? I'll just need your email to
+> pitches dropthis itself — as your first drop? I'd just need your email to
 > log you in.
 
-If they say yes, continue below. That email is the only input you need from
-them; everything else, just do.
+If they say yes, the email for login is the only input the rest needs.
 
 ## 2. Install the CLI
 
@@ -45,7 +43,7 @@ Otherwise log them in with email OTP:
 4. `dropthis login verify --email <their-email> --otp <code>`
 5. Confirm: `dropthis whoami --json`
 
-## 4. Publish their first drop
+## 4. Publish their first drop (after their go-ahead)
 
 Publish the deck that explains dropthis itself — a fitting first drop:
 
