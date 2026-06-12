@@ -86,3 +86,21 @@ test('contentHash changes when content changes', async () => {
   const b = contentHash(new Map([['a.html', Buffer.from('z')]]));
   assert.notEqual(a, b);
 });
+
+test("onAccountDomain flags urls captured by the account's own domains", async () => {
+  const { onAccountDomain } = await import('./lib.mjs');
+  const hosts = ['pages.byrokko.com'];
+  assert.equal(onAccountDomain('https://pages.byrokko.com/oulze9e/', hosts), true);
+  assert.equal(onAccountDomain('https://nbe5th6.requestbox.link/', hosts), false);
+  assert.equal(onAccountDomain('https://dropthis.app/d/abc', hosts), false);
+  assert.equal(onAccountDomain('https://x.dropthis.app/', []), false);
+});
+
+test('publishOpts truncates title to 64 chars and caps idempotency key at 48', async () => {
+  const { publishOpts } = await import('./lib.mjs');
+  const longTitle = 'Shine Brown Oil — Natural Tanning Oil for Faster, Deeper Results | BYROKKO';
+  const opts = publishOpts('shine-brown-landing', longTitle, 'f'.repeat(64));
+  assert.equal(opts.title.length, 64);
+  assert.ok(opts.idempotencyKey.length <= 48, `idempotencyKey too long: ${opts.idempotencyKey.length}`);
+  assert.equal(publishOpts('x', null, 'ab'.repeat(32)).title, 'x');
+});

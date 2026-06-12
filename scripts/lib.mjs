@@ -43,6 +43,22 @@ export function contentHash(filesByPath) {
   return hash.digest('hex');
 }
 
+// A sample drop must live on the shared pool, not on one of the publishing
+// account's own custom domains (an account default domain captures publishes).
+export function onAccountDomain(url, accountHostnames) {
+  const host = new URL(url).hostname;
+  return accountHostnames.includes(host);
+}
+
+// Server limits: title <= 64 chars; idempotency keys get an SDK suffix, so
+// stay well under the 64-char cap ourselves (<= 48).
+export function publishOpts(name, title, hash) {
+  return {
+    title: (title ?? name).slice(0, 64),
+    idempotencyKey: hash.slice(0, 48),
+  };
+}
+
 export function verifyTargets(htmlPaths, entry, baseUrl) {
   const base = baseUrl.replace(/\/+$/, '');
   return htmlPaths.map((path) => ({

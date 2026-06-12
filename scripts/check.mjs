@@ -11,7 +11,16 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Dropthis } from '@dropthis/node';
-import { pickEntry, isDocFile, planAction, extractTitle, verifyTargets, contentHash } from './lib.mjs';
+import {
+  pickEntry,
+  isDocFile,
+  planAction,
+  extractTitle,
+  verifyTargets,
+  contentHash,
+  onAccountDomain,
+  publishOpts,
+} from './lib.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const MANIFEST = join(ROOT, 'manifest.json');
@@ -74,6 +83,9 @@ const client = new Dropthis();
 const samples = await discoverSamples();
 const failures = [];
 
+const domainsPage = await client.domains.list();
+const accountHosts = domainsPage.error ? [] : domainsPage.data.domains.map((d) => d.hostname);
+
 for (const sample of samples) {
   const htmls = [...sample.files.keys()].filter((f) => f.toLowerCase().endsWith('.html'));
   const entry = pickEntry(htmls.filter((f) => !f.includes('/'))) ?? htmls[0];
@@ -81,11 +93,12 @@ for (const sample of samples) {
   const hash = contentHash(sample.files);
   const plan = planAction(manifest[sample.name]);
 
-  if (manifest[sample.name]?.hash === hash && manifest[sample.name]?.verified) {
+  const entryUnchanged = manifest[sample.name]?.hash === hash && manifest[sample.name]?.verified;
+  if (entryUnchanged && !onAccountDomain(manifest[sample.name].url, accountHosts)) {
     console.log(`• ${sample.name} — unchanged, skipping publish`);
-  } else {
+  } else if (!entryUnchanged) {
     const staged = await stage(sample);
-    const opts = { title: title ?? sample.name, idempotencyKey: `${sample.name}-${hash.slice(0, 32)}` };
+    const opts = publishOpts(sample.name, title, hash);
     const result =
       plan.action === 'publish'
         ? await client.drops.publish(staged, opts)
@@ -99,11 +112,25 @@ for (const sample of samples) {
     manifest[sample.name] = {
       id: result.data.id ?? plan.id,
       url: result.data.url ?? manifest[sample.name]?.url,
-      title: title ?? sample.name,
+      title: opts.title,
       hash,
       verified: false,
     };
     console.log(`✔ ${sample.name} — ${plan.action} → ${manifest[sample.name].url}`);
+  }
+
+  // Samples always live on the shared pool — a custom default domain on the
+  // publishing account must not capture them.
+  if (onAccountDomain(manifest[sample.name].url, accountHosts)) {
+    const moved = await client.drops.updateSettings(manifest[sample.name].id, { domain: null });
+    if (moved.error) {
+      failures.push(`${sample.name}: move to shared pool failed — ${moved.error.message}`);
+      console.error(`  ✖ move to shared pool failed: ${moved.error.message}`);
+      continue;
+    }
+    manifest[sample.name].url = moved.data.url;
+    manifest[sample.name].verified = false;
+    console.log(`  ↳ moved to shared pool → ${moved.data.url}`);
   }
 
   const baseUrl = manifest[sample.name].url;
