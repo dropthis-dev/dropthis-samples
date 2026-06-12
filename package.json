@@ -1,0 +1,12 @@
+{
+  "name": "dropthis-samples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test scripts/*.test.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "@dropthis/node": "^0.12.0"
+  }
+}
