@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Asteroids</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #f8fafc;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 54%, #000 100%);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    main {
+      width: min(1120px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .game-card,
+    aside {
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(15, 23, 42, 0.72);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      border-radius: 24px;
+      overflow: hidden;
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      display: flex;
+      gap: 16px;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      background: #020617;
+      touch-action: none;
+    }
+
+    .overlay {
+      padding: 14px 18px 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      color: #cbd5e1;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: #38bdf8;
+      color: #00111f;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #facc15;
+      outline-offset: 3px;
+    }
+
+    aside {
+      padding: 20px;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-top: 22px;
+    }
+
+    p {
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    ol {
+      padding-left: 24px;
+      color: #e2e8f0;
+    }
+
+    li {
+      margin: 8px 0;
+    }
+
+    kbd {
+      background: rgba(148, 163, 184, 0.16);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+
+    .status {
+      min-height: 24px;
+      color: #facc15;
+      font-weight: 800;
+    }
+
+    @media (max-width: 860px) {
+      body {
+        padding: 10px;
+      }
+
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        order: -1;
+      }
+
+      .overlay,
+      .topbar {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="game-card" aria-label="Game area">
+      <div class="topbar">
+        <span>Score: <b id="score">0</b></span>
+        <span>Lives: <b id="lives">3</b></span>
+        <span>Level: <b id="level">1</b></span>
+      </div>
+      <canvas id="game" width="960" height="600" aria-label="Asteroids game canvas"></canvas>
+      <div class="overlay">
+        <div>
+          <div class="status" id="status">Press Start or Space</div>
+          <small><kbd>Arrow Keys</kbd> rotate/thrust, <kbd>Space</kbd> fire, <kbd>Enter</kbd> restart</small>
+        </div>
+        <button id="startButton" type="button">Start Game</button>
+      </div>
+    </section>
+    <aside>
+      <h1>Local Asteroids</h1>
+      <p>Clear drifting rocks, survive collisions, and keep the top scores on this browser.</p>
+      <h2>Leaderboard</h2>
+      <ol id="leaderboard"></ol>
+    </aside>
+  </main>
+
+  <script>
+    const canvas = document.querySelector('#game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.querySelector('#score');
+    const livesEl = document.querySelector('#lives');
+    const levelEl = document.querySelector('#level');
+    const statusEl = document.querySelector('#status');
+    const startButton = document.querySelector('#startButton');
+    const leaderboardEl = document.querySelector('#leaderboard');
+    const STORAGE_KEY = 'local-asteroids-leaderboard-v1';
+
+    let fallbackScores = [];
+
+    function loadScores() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        return fallbackScores;
+      }
+    }
+
+    function saveScores(scores) {
+      const trimmed = scores
+        .filter((entry) => entry && entry.name && Number.isFinite(entry.score))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+
+      fallbackScores = trimmed;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+      } catch (error) {
+        return trimmed;
+      }
+      return trimmed;
+    }
+
+    function addScore(name, score) {
+      const safeName = String(name || 'Pilot').trim().slice(0, 14) || 'Pilot';
+      return saveScores([...loadScores(), { name: safeName, score, date: new Date().toISOString() }]);
+    }
+
+    function renderLeaderboard() {
+      const scores = loadScores();
+      leaderboardEl.innerHTML = scores.length
+        ? scores.map((entry) => `<li><strong>${escapeHtml(entry.name)}</strong> - ${entry.score}</li>`).join('')
+        : '<li>No scores yet</li>';
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+    }
+
+    const keys = new Set();
+    const TWO_PI = Math.PI * 2;
+    let animationId = 0;
+    let state = createInitialState();
+
+    function createInitialState() {
+      return {
+        running: false,
+        over: false,
+        score: 0,
+        lives: 3,
+        level: 1,
+        cooldown: 0,
+        ship: {
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: 0,
+          vy: 0,
+          angle: -Math.PI / 2,
+          radius: 14,
+          invulnerable: 120
+        },
+        bullets: [],
+        asteroids: []
+      };
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const scale = window.devicePixelRatio || 1;
+      canvas.width = Math.max(640, Math.floor(rect.width * scale));
+      canvas.height = Math.max(400, Math.floor(rect.height * scale));
+    }
+
+    function startGame() {
+      state = createInitialState();
+      spawnWave();
+      state.running = true;
+      state.over = false;
+      statusEl.textContent = 'Survive the field';
+      startButton.textContent = 'Restart';
+      cancelAnimationFrame(animationId);
+      animationId = requestAnimationFrame(loop);
+    }
+
+    function spawnWave() {
+      state.asteroids = [];
+      const count = 4 + state.level;
+      for (let index = 0; index < count; index += 1) {
+        state.asteroids.push(createAsteroid(42, randomEdgePoint()));
+      }
+    }
+
+    function createAsteroid(radius, point) {
+      const speed = 0.7 + Math.random() * 1.4 + state.level * 0.08;
+      const angle = Math.random() * TWO_PI;
+      return {
+        x: point.x,
+        y: point.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        radius,
+        spin: (Math.random() - 0.5) * 0.02,
+        angle: Math.random() * TWO_PI,
+        shape: Array.from({ length: 10 }, () => 0.74 + Math.random() * 0.38)
+      };
+    }
+
+    function randomEdgePoint() {
+      const edge = Math.floor(Math.random() * 4);
+      if (edge === 0) return { x: 0, y: Math.random() * canvas.height };
+      if (edge === 1) return { x: canvas.width, y: Math.random() * canvas.height };
+      if (edge === 2) return { x: Math.random() * canvas.width, y: 0 };
+      return { x: Math.random() * canvas.width, y: canvas.height };
+    }
+
+    function loop() {
+      update();
+      draw();
+      if (state.running) animationId = requestAnimationFrame(loop);
+    }
+
+    function update() {
+      handleShipInput();
+      moveObject(state.ship);
+      state.ship.vx *= 0.992;
+      state.ship.vy *= 0.992;
+      state.ship.invulnerable = Math.max(0, state.ship.invulnerable - 1);
+      state.cooldown = Math.max(0, state.cooldown - 1);
+
+      state.bullets.forEach((bullet) => {
+        moveObject(bullet);
+        bullet.life -= 1;
+      });
+      state.bullets = state.bullets.filter((bullet) => bullet.life > 0);
+
+      state.asteroids.forEach((asteroid) => {
+        moveObject(asteroid);
+        asteroid.angle += asteroid.spin;
+      });
+
+      checkBulletHits();
+      checkShipHits();
+
+      if (state.asteroids.length === 0) {
+        state.level += 1;
+        state.ship.invulnerable = 100;
+        spawnWave();
+      }
+
+      scoreEl.textContent = state.score;
+      livesEl.textContent = state.lives;
+      levelEl.textContent = state.level;
+    }
+
+    function handleShipInput() {
+      if (keys.has('ArrowLeft')) state.ship.angle -= 0.075;
+      if (keys.has('ArrowRight')) state.ship.angle += 0.075;
+      if (keys.has('ArrowUp')) {
+        state.ship.vx += Math.cos(state.ship.angle) * 0.12;
+        state.ship.vy += Math.sin(state.ship.angle) * 0.12;
+      }
+      if (keys.has('Space') && state.cooldown === 0) {
+        state.bullets.push({
+          x: state.ship.x + Math.cos(state.ship.angle) * 18,
+          y: state.ship.y + Math.sin(state.ship.angle) * 18,
+          vx: state.ship.vx + Math.cos(state.ship.angle) * 7,
+          vy: state.ship.vy + Math.sin(state.ship.angle) * 7,
+          radius: 3,
+          life: 54
+        });
+        state.cooldown = 12;
+      }
+    }
+
+    function moveObject(object) {
+      object.x = (object.x + object.vx + canvas.width) % canvas.width;
+      object.y = (object.y + object.vy + canvas.height) % canvas.height;
+    }
+
+    function checkBulletHits() {
+      const remainingAsteroids = [];
+      for (const asteroid of state.asteroids) {
+        const hitIndex = state.bullets.findIndex((bullet) => distance(bullet, asteroid) < bullet.radius + asteroid.radius);
+        if (hitIndex === -1) {
+          remainingAsteroids.push(asteroid);
+          continue;
+        }
+        state.bullets.splice(hitIndex, 1);
+        state.score += Math.round(120 - asteroid.radius);
+        if (asteroid.radius > 18) {
+          remainingAsteroids.push(createAsteroid(asteroid.radius * 0.58, asteroid));
+          remainingAsteroids.push(createAsteroid(asteroid.radius * 0.58, asteroid));
+        }
+      }
+      state.asteroids = remainingAsteroids;
+    }
+
+    function checkShipHits() {
+      if (state.ship.invulnerable > 0) return;
+      const hit = state.asteroids.some((asteroid) => distance(state.ship, asteroid) < state.ship.radius + asteroid.radius * 0.78);
+      if (!hit) return;
+      state.lives -= 1;
+      livesEl.textContent = state.lives;
+      if (state.lives <= 0) {
+        endGame();
+        return;
+      }
+      Object.assign(state.ship, {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: 0,
+        vy: 0,
+        angle: -Math.PI / 2,
+        invulnerable: 140
+      });
+    }
+
+    function endGame() {
+      state.running = false;
+      state.over = true;
+      statusEl.textContent = `Game over - ${state.score} points`;
+      startButton.textContent = 'Play Again';
+      if (state.score > 0) {
+        const name = prompt('Leaderboard name:', 'Pilot');
+        addScore(name, state.score);
+        renderLeaderboard();
+      }
+    }
+
+    function distance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function draw() {
+      drawStars();
+      state.asteroids.forEach(drawAsteroid);
+      state.bullets.forEach(drawBullet);
+      drawShip();
+    }
+
+    function drawStars() {
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(226, 232, 240, 0.75)';
+      for (let index = 0; index < 90; index += 1) {
+        const x = (index * 97) % canvas.width;
+        const y = (index * 53) % canvas.height;
+        ctx.fillRect(x, y, 1.4, 1.4);
+      }
+    }
+
+    function drawShip() {
+      if (state.ship.invulnerable > 0 && Math.floor(state.ship.invulnerable / 8) % 2 === 0) return;
+      ctx.save();
+      ctx.translate(state.ship.x, state.ship.y);
+      ctx.rotate(state.ship.angle);
+      ctx.strokeStyle = '#e0f2fe';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(18, 0);
+      ctx.lineTo(-13, -11);
+      ctx.lineTo(-8, 0);
+      ctx.lineTo(-13, 11);
+      ctx.closePath();
+      ctx.stroke();
+      if (keys.has('ArrowUp')) {
+        ctx.strokeStyle = '#fb923c';
+        ctx.beginPath();
+        ctx.moveTo(-13, 0);
+        ctx.lineTo(-25, 0);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawBullet(bullet) {
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(bullet.x, bullet.y, bullet.radius, 0, TWO_PI);
+      ctx.fill();
+    }
+
+    function drawAsteroid(asteroid) {
+      ctx.save();
+      ctx.translate(asteroid.x, asteroid.y);
+      ctx.rotate(asteroid.angle);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      asteroid.shape.forEach((factor, index) => {
+        const angle = (index / asteroid.shape.length) * TWO_PI;
+        const radius = asteroid.radius * factor;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      if (!state.running) {
+        state = createInitialState();
+      }
+      draw();
+    });
+
+    window.addEventListener('keydown', (event) => {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'Space', 'Enter'].includes(event.code)) event.preventDefault();
+      keys.add(event.code);
+      if ((event.code === 'Space' || event.code === 'Enter') && (!state.running || state.over)) startGame();
+    });
+
+    window.addEventListener('keyup', (event) => keys.delete(event.code));
+    startButton.addEventListener('click', startGame);
+
+    renderLeaderboard();
+    resizeCanvas();
+    state = createInitialState();
+    draw();
+  </script>
+</body>
+</html>

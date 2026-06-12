@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get Early Access</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg-start: #fdf7f2;
+  --bg-end: #f4ede6;
+  --accent: #d4583a;
+  --accent-hover: #c04a2e;
+  --accent-soft: #fceee9;
+  --text: #1a1210;
+  --text-muted: #8c7b72;
+  --text-light: #b5a69d;
+  --border: #e2d9d2;
+  --border-focus: #d4583a;
+  --surface: #fff;
+  --error: #c0392b;
+  --success: #27ae60;
+  --radius: 14px;
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+}
+
+html { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  background: linear-gradient(170deg, var(--bg-start) 0%, var(--bg-end) 100%);
+  color: var(--text);
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* — Progress bar — */
+.progress-track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--border);
+  z-index: 100;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0 4px 4px 0;
+}
+
+/* — Step dots — */
+.step-dots {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+}
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.4s ease;
+}
+.step-dot.active {
+  background: var(--accent);
+  transform: scale(1.25);
+}
+.step-dot.completed {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+/* — Form wrapper — */
+.form-container {
+  width: 100%;
+  max-width: 600px;
+  padding: 0 32px;
+  position: relative;
+  min-height: 400px;
+}
+
+/* — Steps — */
+.step {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 0 32px;
+  opacity: 0;
+  transform: translateY(40px);
+  pointer-events: none;
+  transition: all 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.step.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.step.exit-up {
+  opacity: 0;
+  transform: translateY(-40px);
+  pointer-events: none;
+}
+
+/* — Step number — */
+.step-label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.step-label::before {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* — Heading — */
+.step-heading {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--text);
+  margin-bottom: 12px;
+  font-optical-sizing: auto;
+}
+.step-heading em {
+  font-style: italic;
+  font-variation-settings: 'SOFT' 100, 'WONK' 1;
+}
+
+.step-subtitle {
+  font-size: 16px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 36px;
+}
+
+/* — Inputs — */
+.input-group { margin-bottom: 28px; }
+
+.text-input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 18px;
+  padding: 16px 0;
+  border: none;
+  border-bottom: 2px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+.text-input:focus {
+  border-bottom-color: var(--accent);
+}
+.text-input::placeholder {
+  color: var(--text-light);
+}
+.text-input.error {
+  border-bottom-color: var(--error);
+}
+
+textarea.text-input {
+  resize: none;
+  min-height: 120px;
+  line-height: 1.6;
+}
+
+.error-msg {
+  font-size: 13px;
+  color: var(--error);
+  margin-top: 8px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.3s ease;
+}
+.error-msg.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* — Choice cards — */
+.choices {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: var(--surface);
+  font-size: 16px;
+  user-select: none;
+}
+.choice:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.choice.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.choice-radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+.choice.selected .choice-radio {
+  border-color: var(--accent);
+}
+.choice.selected .choice-radio::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.choice-icon { font-size: 20px; }
+
+@keyframes pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* — Buttons — */
+.btn-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.btn-primary {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 16px 36px;
+  border: none;
+  border-radius: 60px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(212, 88, 58, 0.3);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+.btn-primary .arrow {
+  transition: transform 0.3s ease;
+}
+.btn-primary:hover .arrow {
+  transform: translateX(3px);
+}
+
+.btn-back {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  border-radius: 8px;
+}
+.btn-back:hover { color: var(--text); }
+
+.key-hint {
+  font-size: 13px;
+  color: var(--text-light);
+  margin-left: auto;
+}
+.key-hint kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  background: var(--surface);
+  margin: 0 2px;
+}
+
+/* — Success screen — */
+.success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, #e8895a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  animation: success-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+@keyframes success-pop {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.success-icon svg {
+  width: 36px;
+  height: 36px;
+  stroke: #fff;
+  stroke-width: 2.5;
+  fill: none;
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: draw-check 0.5s ease 0.6s forwards;
+}
+@keyframes draw-check {
+  to { stroke-dashoffset: 0; }
+}
+
+.success-heading {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 400;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+.success-text {
+  font-size: 17px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  max-width: 420px;
+}
+
+/* — Confetti — */
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  top: -20px;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0.5); opacity: 0; }
+}
+
+/* — Branding — */
+.brand {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: var(--text-light);
+  z-index: 10;
+}
+.brand a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+.brand a:hover { color: var(--accent); }
+
+/* — Responsive — */
+@media (max-width: 640px) {
+  .form-container { padding: 0 8px; }
+  .step { padding: 0 8px; }
+  .key-hint { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+<div class="step-dots" id="dots"></div>
+
+<div class="form-container">
+
+  <!-- Step 1: Name -->
+  <div class="step active" data-step="0">
+    <div class="step-label">Step 1 of 4</div>
+    <h1 class="step-heading">What's your <em>name</em>?</h1>
+    <p class="step-subtitle">We'd love to know who we're talking to.</p>
+    <div class="input-group">
+      <input class="text-input" type="text" id="field-name" placeholder="Jane Doe" autocomplete="name" autofocus>
+      <div class="error-msg" id="err-name">Please enter your name</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="next()">Continue <span class="arrow">&rarr;</span></button>
+      <span class="key-hint">Press <kbd>Enter</kbd> &crarr;</span>
+    </div>
+  </div>
+
+  <!-- Step 2: Email -->
+  <div class="step" data-step="1">
+    <div class="step-label">Step 2 of 4</div>
+    <h1 class="step-heading">How can we <em>reach</em> you?</h1>
+    <p class="step-subtitle">We'll send you an invite when your spot opens up.</p>
+    <div class="input-group">
+      <input class="text-input" type="email" id="field-email" placeholder="jane@company.com" autocomplete="email">
+      <div class="error-msg" id="err-email">Please enter a valid email</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="prev()">&larr; Back</button>
+      <button class="btn-primary" onclick="next()">Continue <span class="arrow">&rarr;</span></button>
+      <span class="key-hint">Press <kbd>Enter</kbd> &crarr;</span>
+    </div>
+  </div>
+
+  <!-- Step 3: Project -->
+  <div class="step" data-step="2">
+    <div class="step-label">Step 3 of 4</div>
+    <h1 class="step-heading">Tell us about your <em>project</em></h1>
+    <p class="step-subtitle">What are you building? A quick sentence is perfect.</p>
+    <div class="input-group">
+      <textarea class="text-input" id="field-project" placeholder="I'm building a tool that..." rows="4"></textarea>
+      <div class="error-msg" id="err-project">Tell us a little about your project</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="prev()">&larr; Back</button>
+      <button class="btn-primary" onclick="next()">Continue <span class="arrow">&rarr;</span></button>
+      <span class="key-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to continue</span>
+    </div>
+  </div>
+
+  <!-- Step 4: Source -->
+  <div class="step" data-step="3">
+    <div class="step-label">Step 4 of 4</div>
+    <h1 class="step-heading">How did you <em>find</em> us?</h1>
+    <p class="step-subtitle">This helps us understand where to focus.</p>
+    <div class="choices" id="choices">
+      <div class="choice" data-value="twitter" onclick="selectChoice(this)">
+        <div class="choice-radio"></div>
+        <span class="choice-icon">&#x1D54F;</span> Twitter / X
+      </div>
+      <div class="choice" data-value="friend" onclick="selectChoice(this)">
+        <div class="choice-radio"></div>
+        <span class="choice-icon">&#x1F44B;</span> A friend told me
+      </div>
+      <div class="choice" data-value="search" onclick="selectChoice(this)">
+        <div class="choice-radio"></div>
+        <span class="choice-icon">&#x1F50D;</span> Google search
+      </div>
+      <div class="choice" data-value="producthunt" onclick="selectChoice(this)">
+        <div class="choice-radio"></div>
+        <span class="choice-icon">&#x1F680;</span> Product Hunt
+      </div>
+      <div class="choice" data-value="other" onclick="selectChoice(this)">
+        <div class="choice-radio"></div>
+        <span class="choice-icon">&#x2728;</span> Something else
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="prev()">&larr; Back</button>
+      <button class="btn-primary" onclick="next()">Submit <span class="arrow">&rarr;</span></button>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div class="step" data-step="4">
+    <div class="success-icon">
+      <svg viewBox="0 0 24 24"><polyline points="6 12 10 16 18 8"/></svg>
+    </div>
+    <h1 class="success-heading">You're on the list!</h1>
+    <p class="success-text">
+      Thanks for signing up. We'll reach out soon with your early access invite.
+      Keep an eye on your inbox.
+    </p>
+  </div>
+
+</div>
+
+<div class="brand">Powered by <a href="https://dropthis.app">dropthis</a></div>
+<div class="confetti-container" id="confetti"></div>
+
+<script>
+const TOTAL_STEPS = 4;
+let current = 0;
+let selectedSource = null;
+
+const steps = document.querySelectorAll('.step');
+const progress = document.getElementById('progress');
+const dotsContainer = document.getElementById('dots');
+
+// Build dots
+for (let i = 0; i < TOTAL_STEPS; i++) {
+  const dot = document.createElement('div');
+  dot.className = 'step-dot' + (i === 0 ? ' active' : '');
+  dotsContainer.appendChild(dot);
+}
+updateProgress();
+
+function updateProgress() {
+  const pct = (current / TOTAL_STEPS) * 100;
+  progress.style.width = pct + '%';
+  const dots = dotsContainer.querySelectorAll('.step-dot');
+  dots.forEach((d, i) => {
+    d.className = 'step-dot';
+    if (i === current) d.classList.add('active');
+    else if (i < current) d.classList.add('completed');
+  });
+}
+
+function goTo(index) {
+  const dir = index > current ? 1 : -1;
+  steps.forEach((s, i) => {
+    s.classList.remove('active', 'exit-up');
+    if (i === current && dir === 1) s.classList.add('exit-up');
+  });
+  current = index;
+  requestAnimationFrame(() => {
+    steps[current].classList.add('active');
+    const input = steps[current].querySelector('input, textarea');
+    if (input) setTimeout(() => input.focus(), 300);
+  });
+  updateProgress();
+}
+
+function validate() {
+  clearErrors();
+  if (current === 0) {
+    const v = document.getElementById('field-name').value.trim();
+    if (!v) return showError('field-name', 'err-name');
+  }
+  if (current === 1) {
+    const v = document.getElementById('field-email').value.trim();
+    if (!v || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return showError('field-email', 'err-email');
+  }
+  if (current === 2) {
+    const v = document.getElementById('field-project').value.trim();
+    if (!v) return showError('field-project', 'err-project');
+  }
+  if (current === 3 && !selectedSource) return false;
+  return true;
+}
+
+function showError(fieldId, errId) {
+  document.getElementById(fieldId).classList.add('error');
+  document.getElementById(errId).classList.add('visible');
+  return false;
+}
+
+function clearErrors() {
+  document.querySelectorAll('.text-input').forEach(i => i.classList.remove('error'));
+  document.querySelectorAll('.error-msg').forEach(e => e.classList.remove('visible'));
+}
+
+function next() {
+  if (!validate()) return;
+  if (current === TOTAL_STEPS - 1) {
+    submit();
+    return;
+  }
+  goTo(current + 1);
+}
+
+function prev() {
+  if (current > 0) goTo(current - 1);
+}
+
+function selectChoice(el) {
+  document.querySelectorAll('.choice').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedSource = el.dataset.value;
+}
+
+function submit() {
+  const data = {
+    name: document.getElementById('field-name').value.trim(),
+    email: document.getElementById('field-email').value.trim(),
+    project: document.getElementById('field-project').value.trim(),
+    source: selectedSource,
+    submittedAt: new Date().toISOString(),
+  };
+
+  console.log('%c Form Submitted ', 'background: #d4583a; color: #fff; font-size: 14px; padding: 4px 12px; border-radius: 6px;');
+  console.log(JSON.stringify(data, null, 2));
+
+  // Mock POST
+  console.log('%c POST /api/waitlist ', 'background: #27ae60; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 4px;', data);
+
+  goTo(TOTAL_STEPS);
+  progress.style.width = '100%';
+  dotsContainer.style.opacity = '0';
+  launchConfetti();
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    if (current === 2 && !e.ctrlKey && !e.metaKey) return; // textarea needs Ctrl+Enter
+    e.preventDefault();
+    next();
+  }
+});
+
+// Confetti
+function launchConfetti() {
+  const container = document.getElementById('confetti');
+  const colors = ['#d4583a', '#e8895a', '#f4c794', '#8B9D83', '#5c8a6e', '#e2d9d2'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = (6 + Math.random() * 8) + 'px';
+    piece.style.height = (8 + Math.random() * 10) + 'px';
+    piece.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    piece.style.animationDelay = (Math.random() * 0.6) + 's';
+    if (Math.random() > 0.5) piece.style.borderRadius = '50%';
+    container.appendChild(piece);
+  }
+  setTimeout(() => container.innerHTML = '', 4500);
+}
+</script>
+</body>
+</html>

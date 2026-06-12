@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BYROKKO — Shine Brown Chocolate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;1,300&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#1a1210;color:#f5ebe0;-webkit-font-smoothing:antialiased}
+
+:root{
+  --chocolate:#3c1f0e;
+  --bronze:#a67c52;
+  --gold:#d4a054;
+  --cream:#f5ebe0;
+  --warm-black:#1a1210;
+  --slide-duration:0.9s;
+}
+
+.slider{position:fixed;inset:0;z-index:1}
+
+.slide{
+  position:absolute;inset:0;
+  opacity:0;visibility:hidden;
+  transition:opacity var(--slide-duration) cubic-bezier(.4,0,.2,1), visibility 0s var(--slide-duration);
+  will-change:opacity,transform;
+}
+.slide.active{
+  opacity:1;visibility:visible;
+  transition:opacity var(--slide-duration) cubic-bezier(.4,0,.2,1), visibility 0s 0s;
+}
+
+.slide__img{
+  position:absolute;inset:0;
+  background-size:cover;
+  background-position:center;
+  animation:kenburns 12s ease-in-out infinite alternate;
+}
+.slide:nth-child(odd) .slide__img{animation-name:kenburns-alt}
+
+@keyframes kenburns{
+  0%{transform:scale(1) translate(0,0)}
+  100%{transform:scale(1.08) translate(-1%,-1%)}
+}
+@keyframes kenburns-alt{
+  0%{transform:scale(1.06) translate(1%,0.5%)}
+  100%{transform:scale(1) translate(0,0)}
+}
+
+.slide__overlay{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(to bottom, rgba(26,18,16,0.15) 0%, transparent 30%),
+    linear-gradient(to top, rgba(26,18,16,0.85) 0%, rgba(26,18,16,0.2) 40%, transparent 65%);
+}
+
+.slide__content{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:0 clamp(24px,5vw,60px) 160px;
+  transform:translateY(12px);
+  opacity:0;
+  transition:transform 0.7s cubic-bezier(.4,0,.2,1) 0.25s, opacity 0.7s ease 0.25s;
+}
+.slide.active .slide__content{
+  transform:translateY(0);
+  opacity:1;
+}
+
+.slide__tag{
+  font-family:'Outfit',sans-serif;
+  font-size:clamp(10px,1.4vw,13px);
+  font-weight:500;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:12px;
+  display:inline-block;
+  position:relative;
+  padding-left:32px;
+}
+.slide__tag::before{
+  content:'';
+  position:absolute;left:0;top:50%;
+  width:20px;height:1px;
+  background:var(--gold);
+}
+
+.slide__title{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:300;
+  font-size:clamp(32px,6vw,64px);
+  line-height:1.05;
+  letter-spacing:-0.02em;
+  color:var(--cream);
+  margin-bottom:10px;
+}
+.slide__title em{font-style:italic;color:var(--gold)}
+
+.slide__desc{
+  font-family:'Outfit',sans-serif;
+  font-weight:300;
+  font-size:clamp(13px,1.6vw,16px);
+  line-height:1.6;
+  color:rgba(245,235,224,0.7);
+  max-width:420px;
+}
+
+/* Navigation arrows */
+.nav-arrow{
+  position:fixed;top:50%;z-index:10;
+  transform:translateY(-50%);
+  width:48px;height:48px;
+  border:1px solid rgba(245,235,224,0.25);
+  border-radius:50%;
+  background:rgba(26,18,16,0.4);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.3s ease;
+  color:var(--cream);
+}
+.nav-arrow:hover{
+  background:rgba(166,124,82,0.3);
+  border-color:var(--bronze);
+  transform:translateY(-50%) scale(1.08);
+}
+.nav-arrow--prev{left:clamp(12px,2vw,28px)}
+.nav-arrow--next{right:clamp(12px,2vw,28px)}
+.nav-arrow svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* Dots */
+.dots{
+  position:fixed;
+  bottom:100px;
+  left:50%;transform:translateX(-50%);
+  z-index:10;
+  display:flex;gap:10px;
+  align-items:center;
+}
+.dot{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:rgba(245,235,224,0.25);
+  border:none;cursor:pointer;
+  transition:all 0.4s cubic-bezier(.4,0,.2,1);
+  padding:0;
+}
+.dot.active{
+  width:28px;
+  border-radius:4px;
+  background:var(--gold);
+}
+
+/* Counter */
+.counter{
+  position:fixed;
+  top:clamp(20px,3vw,36px);
+  right:clamp(20px,3vw,36px);
+  z-index:10;
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(14px,2vw,18px);
+  font-weight:300;
+  color:rgba(245,235,224,0.5);
+  letter-spacing:0.05em;
+}
+.counter__current{
+  font-size:clamp(24px,3vw,36px);
+  color:var(--cream);
+  font-weight:500;
+}
+
+/* Logo */
+.logo{
+  position:fixed;
+  top:clamp(20px,3vw,36px);
+  left:clamp(20px,5vw,36px);
+  z-index:10;
+  font-family:'Cormorant Garamond',serif;
+  font-weight:600;
+  font-size:clamp(16px,2.2vw,22px);
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  color:var(--cream);
+  text-decoration:none;
+  text-shadow:0 2px 12px rgba(0,0,0,0.4);
+}
+
+/* CTA Bar */
+.cta-bar{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  z-index:20;
+  padding:16px clamp(20px,5vw,40px);
+  background:linear-gradient(to top,rgba(26,18,16,0.95) 60%,rgba(26,18,16,0));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  padding-top:36px;
+}
+.cta-bar__text{
+  font-family:'Outfit',sans-serif;
+  font-weight:300;
+  font-size:clamp(12px,1.4vw,14px);
+  color:rgba(245,235,224,0.6);
+  letter-spacing:0.04em;
+  display:none;
+}
+.cta-btn{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 36px;
+  background:linear-gradient(135deg,var(--gold),var(--bronze));
+  border:none;border-radius:50px;
+  font-family:'Outfit',sans-serif;
+  font-weight:500;
+  font-size:clamp(13px,1.5vw,15px);
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--warm-black);
+  text-decoration:none;
+  cursor:pointer;
+  transition:all 0.35s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 4px 24px rgba(212,160,84,0.25);
+  position:relative;
+  overflow:hidden;
+}
+.cta-btn::before{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.2),transparent);
+  opacity:0;
+  transition:opacity 0.35s ease;
+}
+.cta-btn:hover{
+  transform:translateY(-2px) scale(1.02);
+  box-shadow:0 8px 32px rgba(212,160,84,0.4);
+}
+.cta-btn:hover::before{opacity:1}
+.cta-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform 0.3s ease}
+.cta-btn:hover svg{transform:translateX(3px)}
+
+/* Progress bar */
+.progress{
+  position:fixed;top:0;left:0;right:0;z-index:30;height:2px;
+  background:rgba(245,235,224,0.08);
+}
+.progress__bar{
+  height:100%;width:0;
+  background:linear-gradient(90deg,var(--gold),var(--bronze));
+  transition:width 0.4s ease;
+}
+
+/* Grain overlay */
+.grain{
+  position:fixed;inset:0;z-index:5;pointer-events:none;
+  opacity:0.035;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat:repeat;
+  background-size:256px;
+}
+
+/* Responsive */
+@media(min-width:768px){
+  .cta-bar__text{display:block}
+  .cta-bar{justify-content:space-between}
+}
+@media(max-width:480px){
+  .nav-arrow{width:40px;height:40px}
+  .nav-arrow svg{width:14px;height:14px}
+  .cta-btn{padding:12px 28px}
+}
+
+/* Preloader */
+.preloader{
+  position:fixed;inset:0;z-index:100;
+  background:var(--warm-black);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  transition:opacity 0.6s ease,visibility 0s 0.6s;
+}
+.preloader.hidden{opacity:0;visibility:hidden}
+.preloader__text{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:300;font-size:18px;
+  letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--bronze);
+  animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="preloader" id="preloader">
+  <div class="preloader__text">BYROKKO</div>
+</div>
+
+<div class="progress"><div class="progress__bar" id="progressBar"></div></div>
+
+<a class="logo" href="https://www.byrokko.com/slovenia/products/shine-brown-chocolate" target="_blank" rel="noopener">BYROKKO</a>
+
+<div class="counter">
+  <span class="counter__current" id="counterCurrent">01</span>
+  <span>&thinsp;/&thinsp;</span>
+  <span id="counterTotal">07</span>
+</div>
+
+<div class="slider" id="slider">
+  <div class="slide active" data-index="0">
+    <div class="slide__img" style="background-image:url('https://byrokko.us/cdn/shop/files/gallery1_1.jpg?v=1739193610&width=1800')"></div>
+    <div class="slide__overlay"></div>
+    <div class="slide__content">
+      <span class="slide__tag">Shine Brown Collection</span>
+      <h2 class="slide__title">Chocolate<br><em>Tanning Cream</em></h2>
+      <p class="slide__desc">Super-fast bronzing cream for an intense golden chocolate tan with premium BYROKKO chocolate scent.</p>
+    </div>
+  </div>
+
+  <div class="slide" data-index="1">
+    <div class="slide__img" style="background-image:url('https://byrokko.us/cdn/shop/products/gallery2_e92e3689-e6f5-4023-98bd-a7b21c838693.jpg?v=1739201101&width=1800')"></div>
+    <div class="slide__overlay"></div>
+    <div class="slide__content">
+      <span class="slide__tag">Premium Formula</span>
+      <h2 class="slide__title">Melts Like<br><em>Chocolate</em></h2>
+      <p class="slide__desc">Rich, velvety texture that's completely non-sticky and absorbs instantly into your skin.</p>
+    </div>
+  </div>
+
+  <div class="slide" data-index="2">
+    <div class="slide__img" style="background-image:url('https://byrokko.us/cdn/shop/products/gallery3_f5b78137-e2eb-4802-b869-76fa12592b31.jpg?v=1741001768&width=1800')"></div>
+    <div class="slide__overlay"></div>
+    <div class="slide__content">
+      <span class="slide__tag">All Skin Types</span>
+      <h2 class="slide__title">Quick Results,<br><em>Every Tone</em></h2>
+      <p class="slide__desc">Expect fast, visible results regardless of your skin type. From fair to deep.</p>
+    </div>
+  </div>
+
+  <div class="slide" data-index="3">
+    <div class="slide__img" style="background-image:url('https://byrokko.us/cdn/shop/files/chocolateshinebrown3.webp?v=1741001768&width=1800')"></div>
+    <div class="slide__overlay"></div>
+    <div class="slide__content">
+      <span class="slide__tag">Ethical Beauty</span>
+      <h2 class="slide__title">Vegan &<br><em>Cruelty Free</em></h2>
+      <p class="slide__desc">EU-made with care. 100% vegan, cruelty-free, and crafted with premium natural ingredients.</p>
+    </div>
+  </div>
+
+  <div class="slide" data-index="4">
+    <div class="slide__img" style="background-image:url('https://byrokko.us/cdn/shop/products/gallery4_4de6e196-6124-4fc8-a7b8-7533b86a98cd.jpg?v=1741001757&width=1800')"></div>
+    <div class="slide__overlay"></div>
+    <div class="slide__content">
+      <span class="slide__tag">4M+ Sold</span>
+      <h2 class="slide__title">The Internet's<br><em>Favourite Tan</em></h2>
+      <p class="slide__desc">Over 400K social media reviews and 2 million satisfied customers worldwide.</p>
+    </div>
+  </div>
+
+  <div class="slide" data-index="5">
+    <div class="slide__img" style="background-image:url('https://byrokko.us/cdn/shop/files/chocolateshinebrown5.webp?v=1741001740&width=1800')"></div>
+    <div class="slide__overlay"></div>
+    <div class="slide__content">
+      <span class="slide__tag">Sun & Indoor</span>
+      <h2 class="slide__title">Outdoor Sun,<br><em>Tanning Bed</em></h2>
+      <p class="slide__desc">Works beautifully under natural sunlight or in a tanning bed for a deep, long-lasting glow.</p>
+    </div>
+  </div>
+
+  <div class="slide" data-index="6">
+    <div class="slide__img" style="background-image:url('https://byrokko.us/cdn/shop/files/Testimonials_CHOCO_CREAM.jpg?v=1741081467&width=1800')"></div>
+    <div class="slide__overlay"></div>
+    <div class="slide__content">
+      <span class="slide__tag">Real Results</span>
+      <h2 class="slide__title">See The<br><em>Difference</em></h2>
+      <p class="slide__desc">Real customers, real results. Join 2M+ people who discovered their best tan.</p>
+    </div>
+  </div>
+</div>
+
+<button class="nav-arrow nav-arrow--prev" id="prevBtn" aria-label="Previous slide">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+</button>
+<button class="nav-arrow nav-arrow--next" id="nextBtn" aria-label="Next slide">
+  <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+</button>
+
+<div class="dots" id="dots"></div>
+
+<div class="cta-bar">
+  <span class="cta-bar__text">Shine Brown Chocolate — Tanning Cream 190ml</span>
+  <a class="cta-btn" href="https://www.byrokko.com/slovenia/products/shine-brown-chocolate" target="_blank" rel="noopener">
+    Shop Now
+    <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </a>
+</div>
+
+<div class="grain"></div>
+
+<script>
+(function(){
+  const slides=document.querySelectorAll('.slide');
+  const total=slides.length;
+  const dotsEl=document.getElementById('dots');
+  const progressBar=document.getElementById('progressBar');
+  const counterCurrent=document.getElementById('counterCurrent');
+  const counterTotal=document.getElementById('counterTotal');
+  let current=0;
+  let autoTimer;
+  let isTransitioning=false;
+  const AUTO_INTERVAL=5000;
+
+  counterTotal.textContent=String(total).padStart(2,'0');
+
+  for(let i=0;i<total;i++){
+    const d=document.createElement('button');
+    d.className='dot'+(i===0?' active':'');
+    d.setAttribute('aria-label','Go to slide '+(i+1));
+    d.addEventListener('click',()=>goTo(i));
+    dotsEl.appendChild(d);
+  }
+  const dots=dotsEl.querySelectorAll('.dot');
+
+  function goTo(index){
+    if(isTransitioning||index===current)return;
+    isTransitioning=true;
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current=index;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+    counterCurrent.textContent=String(current+1).padStart(2,'0');
+    progressBar.style.width=((current+1)/total*100)+'%';
+    resetAuto();
+    setTimeout(()=>{isTransitioning=false},900);
+  }
+
+  function next(){goTo((current+1)%total)}
+  function prev(){goTo((current-1+total)%total)}
+
+  document.getElementById('nextBtn').addEventListener('click',next);
+  document.getElementById('prevBtn').addEventListener('click',prev);
+
+  function resetAuto(){clearInterval(autoTimer);autoTimer=setInterval(next,AUTO_INTERVAL)}
+  resetAuto();
+
+  // Keyboard
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' ')next();
+    else if(e.key==='ArrowLeft')prev();
+  });
+
+  // Touch / swipe
+  let touchStartX=0,touchStartY=0,isSwiping=false;
+  const slider=document.getElementById('slider');
+
+  slider.addEventListener('touchstart',e=>{
+    touchStartX=e.changedTouches[0].screenX;
+    touchStartY=e.changedTouches[0].screenY;
+    isSwiping=true;
+  },{passive:true});
+
+  slider.addEventListener('touchend',e=>{
+    if(!isSwiping)return;
+    isSwiping=false;
+    const dx=e.changedTouches[0].screenX-touchStartX;
+    const dy=e.changedTouches[0].screenY-touchStartY;
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>50){
+      dx<0?next():prev();
+    }
+  },{passive:true});
+
+  // Preload images then hide preloader
+  progressBar.style.width=(1/total*100)+'%';
+  const images=Array.from(slides).map(s=>{
+    const div=s.querySelector('.slide__img');
+    const bg=div.style.backgroundImage;
+    return bg.replace(/url\(['"]?(.+?)['"]?\)/,'$1');
+  });
+
+  let loaded=0;
+  function checkAllLoaded(){
+    loaded++;
+    if(loaded>=images.length){
+      document.getElementById('preloader').classList.add('hidden');
+    }
+  }
+  images.forEach(src=>{
+    const img=new Image();
+    img.onload=checkAllLoaded;
+    img.onerror=checkAllLoaded;
+    img.src=src;
+  });
+  setTimeout(()=>document.getElementById('preloader').classList.add('hidden'),4000);
+})();
+</script>
+</body>
+</html>

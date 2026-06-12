@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SPA Calculator</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      background: radial-gradient(circle at top left, #7c3aed 0, transparent 35%),
+                  linear-gradient(135deg, #0f172a, #111827 55%, #020617);
+      color: #f8fafc; padding: 24px;
+    }
+    .app { width: min(390px, 100%); }
+    .card {
+      background: rgba(15, 23, 42, 0.78); border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 24px 70px rgba(0,0,0,.45); backdrop-filter: blur(18px);
+      border-radius: 28px; padding: 22px;
+    }
+    h1 { margin: 0 0 18px; font-size: 1.45rem; letter-spacing: -0.02em; }
+    .display {
+      min-height: 96px; display: flex; flex-direction: column; justify-content: end; align-items: end;
+      background: rgba(2, 6, 23, .55); border-radius: 20px; padding: 16px; margin-bottom: 16px;
+      overflow: hidden; word-break: break-all;
+    }
+    .expression { color: #94a3b8; font-size: .95rem; min-height: 22px; }
+    .result { font-size: clamp(2rem, 9vw, 3.3rem); font-weight: 750; line-height: 1.05; }
+    .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    button {
+      border: 0; border-radius: 18px; min-height: 62px; font-size: 1.2rem; font-weight: 700;
+      color: #e5e7eb; background: rgba(30, 41, 59, .94); cursor: pointer;
+      transition: transform .08s ease, filter .15s ease, background .15s ease;
+    }
+    button:hover { filter: brightness(1.12); }
+    button:active { transform: translateY(1px) scale(.99); }
+    .op { background: #7c3aed; }
+    .util { background: rgba(100, 116, 139, .88); }
+    .equals { background: #10b981; grid-column: span 2; }
+    .zero { grid-column: span 2; }
+    .hint { text-align: center; color: #94a3b8; font-size: .82rem; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Calculator single page app">
+    <section class="card">
+      <h1>Simple SPA Calculator</h1>
+      <div class="display" aria-live="polite">
+        <div id="expression" class="expression"></div>
+        <div id="result" class="result">0</div>
+      </div>
+      <div class="keys">
+        <button class="util" data-action="clear">AC</button>
+        <button class="util" data-action="backspace">⌫</button>
+        <button class="util" data-value="%">%</button>
+        <button class="op" data-value="/">÷</button>
+        <button data-value="7">7</button><button data-value="8">8</button><button data-value="9">9</button><button class="op" data-value="*">×</button>
+        <button data-value="4">4</button><button data-value="5">5</button><button data-value="6">6</button><button class="op" data-value="-">−</button>
+        <button data-value="1">1</button><button data-value="2">2</button><button data-value="3">3</button><button class="op" data-value="+">+</button>
+        <button class="zero" data-value="0">0</button><button data-value=".">.</button><button class="equals" data-action="equals">=</button>
+      </div>
+    </section>
+    <p class="hint">Tip: your keyboard works too.</p>
+  </main>
+  <script>
+    const expressionEl = document.getElementById('expression');
+    const resultEl = document.getElementById('result');
+    let expr = '';
+
+    const clean = value => value.replace(/\*/g, '×').replace(/\//g, '÷');
+    const render = () => { expressionEl.textContent = clean(expr); resultEl.textContent = expr ? preview() : '0'; };
+    const preview = () => {
+      try {
+        if (!/[0-9)]$/.test(expr)) return clean(expr).split(/[+\-*/%]/).pop() || '0';
+        const value = Function(`"use strict"; return (${expr})`)();
+        return Number.isFinite(value) ? Number.parseFloat(value.toFixed(10)).toString() : 'Error';
+      } catch { return clean(expr).split(/[+\-*/%]/).pop() || '0'; }
+    };
+    const append = value => {
+      if ('+-*/%'.includes(value) && (!expr || '+-*/%'.includes(expr.at(-1)))) expr = expr.slice(0, -1);
+      if (value === '.' && /(^|[+\-*/%])\d*\.$/.test(expr)) return;
+      expr += value; render();
+    };
+    const equals = () => { const value = preview(); if (value !== 'Error') expr = value; render(); };
+
+    document.querySelector('.keys').addEventListener('click', e => {
+      const btn = e.target.closest('button'); if (!btn) return;
+      if (btn.dataset.value) append(btn.dataset.value);
+      if (btn.dataset.action === 'clear') { expr = ''; render(); }
+      if (btn.dataset.action === 'backspace') { expr = expr.slice(0, -1); render(); }
+      if (btn.dataset.action === 'equals') equals();
+    });
+    addEventListener('keydown', e => {
+      if (/^[0-9.+\-*/%]$/.test(e.key)) append(e.key);
+      if (e.key === 'Enter' || e.key === '=') equals();
+      if (e.key === 'Backspace') { expr = expr.slice(0, -1); render(); }
+      if (e.key === 'Escape') { expr = ''; render(); }
+    });
+  </script>
+</body>
+</html>

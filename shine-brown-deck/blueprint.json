@@ -1,0 +1,12 @@
+{
+  "id": "tiktok",
+  "name": "TikTok Swipe Deck",
+  "version": "1.0.0",
+  "aesthetic": "bold, high-contrast, mobile-native",
+  "format": "swipe-deck",
+  "preserve": ["9:16 aspect", "sticky CTA", "vertical scroll-snap"],
+  "assetSpecs": [
+    { "id": "slide", "for": "slides[].image", "artDirection": "9:16 full-bleed, subject centered, dark enough for white overlay text", "fallback": "#111111" }
+  ],
+  "tokens": ["color.canvas","color.text","color.accent","color.accentText","font.display","font.body"]
+}

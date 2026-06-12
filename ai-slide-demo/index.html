@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI-Native Slide Systems — Demo Deck</title>
+<meta name="description" content="A demo slide deck inspired by Claude Designs and HTML slide skill workflows." />
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: rgba(255,255,255,.08);
+    --panel2: rgba(255,255,255,.13);
+    --text: #f7f2ea;
+    --muted: #b7b3c8;
+    --accent: #ff7a59;
+    --accent2: #7c5cff;
+    --accent3: #2ee59d;
+    --line: rgba(255,255,255,.18);
+    --shadow: 0 24px 80px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 12% 10%, rgba(124,92,255,.48), transparent 30%),
+      radial-gradient(circle at 82% 20%, rgba(255,122,89,.42), transparent 28%),
+      radial-gradient(circle at 60% 92%, rgba(46,229,157,.24), transparent 34%),
+      var(--bg);
+    color: var(--text);
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -28vmax;
+    z-index: 0;
+    pointer-events: none;
+    opacity: .38;
+    filter: blur(42px) saturate(140%);
+    background:
+      conic-gradient(from 120deg at 30% 45%, transparent 0 18%, rgba(46,229,157,.26) 24%, transparent 34%, rgba(124,92,255,.28) 43%, transparent 56%, rgba(255,122,89,.22) 68%, transparent 78%),
+      radial-gradient(ellipse at 55% 38%, rgba(255,255,255,.12), transparent 42%);
+    animation: auroraDrift 18s ease-in-out infinite alternate;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(11,16,32,.12), rgba(11,16,32,.42));
+  }
+  .deck { width: 100vw; height: 100vh; position: relative; z-index: 2; }
+  .slide {
+    position: absolute; inset: 0; padding: 6vmin 7vmin 7vmin;
+    display: grid; align-content: center; gap: 3vmin;
+    opacity: 0; transform: translateX(36px) scale(.985);
+    transition: opacity .55s ease, transform .55s ease;
+    pointer-events: none;
+  }
+  .slide.active { opacity: 1; transform: translateX(0) scale(1); pointer-events: auto; }
+  .kicker { color: var(--accent3); font-weight: 800; letter-spacing: .16em; text-transform: uppercase; font-size: clamp(.72rem, 1.3vw, .95rem); }
+  h1, h2 { margin: 0; line-height: .92; letter-spacing: -.06em; }
+  h1 { font-size: clamp(3.8rem, 10vw, 9.8rem); max-width: 1100px; }
+  h2 { font-size: clamp(2.7rem, 6.6vw, 6.6rem); max-width: 1100px; }
+  p { font-size: clamp(1.05rem, 2vw, 1.55rem); line-height: 1.45; color: var(--muted); margin: 0; max-width: 920px; }
+  .big { font-size: clamp(1.4rem, 2.7vw, 2.45rem); color: var(--text); max-width: 1050px; }
+  .grid2 { display: grid; grid-template-columns: 1.02fr .98fr; gap: 4vmin; align-items: center; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.2vmin; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 28px; padding: 3vmin; box-shadow: var(--shadow); backdrop-filter: blur(16px); }
+  .card strong { display: block; font-size: clamp(1.25rem, 2.3vw, 2rem); margin-bottom: .55rem; }
+  .metric { font-size: clamp(3rem, 7vw, 7rem); font-weight: 900; letter-spacing: -.08em; background: linear-gradient(120deg, var(--text), var(--accent)); -webkit-background-clip: text; color: transparent; }
+  .pill { display:inline-flex; align-items:center; gap:.5rem; padding:.55rem .9rem; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.08); color:var(--text); font-weight:700; margin:.25rem .35rem .25rem 0; }
+  .steps { counter-reset: step; display: grid; gap: 1.4vmin; }
+  .step { counter-increment: step; display: grid; grid-template-columns: 64px 1fr; gap: 1rem; align-items: start; padding: 1.2rem; border-radius: 24px; background: var(--panel); border: 1px solid var(--line); }
+  .step:before { content: counter(step); display:grid; place-items:center; width:52px; height:52px; border-radius:18px; background:linear-gradient(135deg,var(--accent),var(--accent2)); font-weight:900; font-size:1.4rem; }
+  .browser { border-radius: 26px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background:#111827; }
+  .bar { height: 42px; background: rgba(255,255,255,.08); display:flex; align-items:center; gap:8px; padding:0 16px; }
+  .dot { width: 12px; height:12px; border-radius:50%; background: var(--accent); } .dot:nth-child(2){background:#ffd166}.dot:nth-child(3){background:var(--accent3)}
+  .screen { padding: 22px; min-height: 340px; background: linear-gradient(135deg, rgba(124,92,255,.25), rgba(46,229,157,.12)); }
+  .mini-slide { height: 76px; margin-bottom: 12px; border-radius: 16px; background: rgba(255,255,255,.1); border: 1px solid var(--line); display:flex; align-items:center; padding:0 18px; color:var(--text); font-weight:800; }
+  .chart { display:flex; align-items:end; gap:18px; height:310px; padding:20px; border-bottom:1px solid var(--line); }
+  .barcol { flex:1; border-radius:18px 18px 6px 6px; background:linear-gradient(180deg,var(--accent3),var(--accent2)); min-height:40px; position:relative; transition:.25s; }
+  .barcol:hover { filter: brightness(1.18); transform: translateY(-8px); }
+  .barcol span { position:absolute; top:-36px; left:50%; transform:translateX(-50%); font-weight:900; }
+  .compare { width:100%; border-collapse: collapse; overflow:hidden; border-radius:26px; font-size:clamp(1rem,1.8vw,1.35rem); }
+  .compare th, .compare td { padding:1.2rem; border:1px solid var(--line); background:var(--panel); text-align:left; }
+  .compare th { color:var(--accent3); }
+  .quote { font-size: clamp(2rem, 5.5vw, 5.6rem); line-height: 1.02; letter-spacing: -.055em; max-width: 1150px; }
+  .nav { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); display:flex; gap:10px; align-items:center; z-index:20; }
+  button { background:rgba(255,255,255,.1); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:.75rem 1rem; font-weight:800; cursor:pointer; backdrop-filter:blur(12px); }
+  button:hover { background:rgba(255,255,255,.2); }
+  .count { color:var(--muted); font-weight:800; min-width:76px; text-align:center; }
+  .progress { position:fixed; top:0; left:0; height:5px; width:0; background:linear-gradient(90deg,var(--accent),var(--accent3)); z-index:30; transition:width .3s; }
+  .footer { position:fixed; right:24px; bottom:24px; color:rgba(255,255,255,.45); font-weight:700; z-index:10; }
+  .camera-plane { position: fixed; top: 22px; right: 22px; z-index: 40; width: min(22vw, 260px); aspect-ratio: 16 / 10; border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,.28); background: rgba(0,0,0,.34); box-shadow: 0 18px 60px rgba(0,0,0,.38); backdrop-filter: blur(14px); transform: perspective(900px) rotateY(-10deg) rotateX(4deg); }
+  .camera-plane video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none; }
+  .camera-plane.on video { display: block; }
+  .cam-fallback { position:absolute; inset:0; display:grid; place-items:center; padding:1rem; text-align:center; color:rgba(255,255,255,.78); font-weight:800; font-size:.9rem; line-height:1.25; background: linear-gradient(135deg, rgba(124,92,255,.38), rgba(255,122,89,.24)); }
+  .camera-plane.on .cam-fallback { display:none; }
+  .cam-label { position:absolute; left:10px; bottom:10px; padding:.35rem .55rem; border-radius:999px; background:rgba(0,0,0,.42); font-size:.72rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+  .spark { position:absolute; width:220px; height:220px; border:1px solid rgba(255,255,255,.16); border-radius:48px; transform:rotate(22deg); right:9vw; top:13vh; animation: float 6s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0) rotate(22deg)} 50%{transform:translateY(-22px) rotate(28deg)} }
+  @keyframes auroraDrift { 0%{ transform: translate3d(-3%, -2%, 0) rotate(0deg) scale(1); } 50%{ transform: translate3d(4%, 3%, 0) rotate(10deg) scale(1.06); } 100%{ transform: translate3d(2%, -4%, 0) rotate(-8deg) scale(1.03); } }
+  @media (max-width: 850px) { .grid2, .grid3 { grid-template-columns: 1fr; } h1 { font-size: 3.4rem; } h2 { font-size: 2.7rem; } .slide { padding: 4rem 1.2rem 5rem; overflow:auto; } }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<main class="deck" id="deck">
+  <section class="slide active">
+    <div class="spark"></div>
+    <div class="kicker">Demo deck</div>
+    <h1>AI-native slides are systems, not files.</h1>
+    <p class="big">A short HTML slide deck inspired by two workflows: Claude Designs for branded decks, and reusable slide skills for animated, interactive presentations.</p>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Problem</div>
+    <div class="grid2">
+      <div><h2>Blank slides drain the work.</h2><p class="big">Traditional deck-making pushes you into typography, alignment, asset hunting, and endless box-dragging before the message is clear.</p></div>
+      <div class="card"><div class="metric">3h</div><p>Can disappear into PowerPoint polish before you have a compelling narrative.</p><span class="pill">layout</span><span class="pill">colors</span><span class="pill">graphics</span><span class="pill">speaker notes</span></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Pattern 1</div>
+    <h2>Claude Designs: make brand consistency reusable.</h2>
+    <div class="grid3">
+      <div class="card"><strong>Design system</strong><p>Upload colors, typography, logos, screenshots, spacing rules, and brand voice.</p></div>
+      <div class="card"><strong>Outline first</strong><p>Draft the talk narrative outside the design tool, then generate slides from that context.</p></div>
+      <div class="card"><strong>Edit + export</strong><p>Tweak directly, chat for changes, then export to PowerPoint, Canva, or PDF.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Pattern 2</div>
+    <div class="grid2">
+      <div><h2>HTML decks: presentation as code.</h2><p class="big">A slide skill can transform a rough outline into a responsive web deck with animations, charts, images, and consistent layouts.</p></div>
+      <div class="browser"><div class="bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div><div class="screen"><div class="mini-slide">01 Title</div><div class="mini-slide">02 Comparison</div><div class="mini-slide">03 Steps</div><div class="mini-slide">04 Interactive chart</div></div></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">12-format mindset</div>
+    <h2>Reusable formats beat one-off slides.</h2>
+    <div class="grid3">
+      <div class="card"><strong>Explain</strong><p>Title, two-column, quote, code block.</p></div>
+      <div class="card"><strong>Compare</strong><p>Comparison table, stack grid, stats, pros/cons.</p></div>
+      <div class="card"><strong>Sequence</strong><p>Steps, roadmap, timeline, demo walkthrough.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Workflow</div>
+    <h2>How to generate a better first draft.</h2>
+    <div class="steps">
+      <div class="step"><div><strong>Give the AI raw material</strong><p>Outline, audience, source docs, desired tone, and brand constraints.</p></div></div>
+      <div class="step"><div><strong>Ask for variety</strong><p>Force multiple slide formats so the deck has rhythm instead of repeated bullets.</p></div></div>
+      <div class="step"><div><strong>Run visual QA</strong><p>Have the agent inspect screenshots, fix overflow, and refine spacing before you review.</p></div></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Interactive chart</div>
+    <h2>HTML makes slides more than static images.</h2>
+    <div class="card">
+      <div class="chart" aria-label="interactive bar chart">
+        <div class="barcol" style="height:42%"><span>42%</span></div>
+        <div class="barcol" style="height:67%"><span>67%</span></div>
+        <div class="barcol" style="height:88%"><span>88%</span></div>
+        <div class="barcol" style="height:74%"><span>74%</span></div>
+      </div>
+      <p>Hover bars for motion. In a real deck, these can be live charts, simulations, calculators, or product demos.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Comparison</div>
+    <h2>Two useful paths.</h2>
+    <table class="compare">
+      <tr><th>Claude Designs</th><th>HTML slide skill</th></tr>
+      <tr><td>Best when you need branded business decks and familiar exports.</td><td>Best when you want web-native motion, interactivity, and automation.</td></tr>
+      <tr><td>Great for template reuse and teammate collaboration.</td><td>Great for repeatable agent workflows and version-controlled artifacts.</td></tr>
+      <tr><td>Edit visually, then export.</td><td>Edit with code or prompts, then publish as a website.</td></tr>
+    </table>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Takeaway</div>
+    <p class="quote">Stop making the same deck from scratch. Build the system that makes the deck.</p>
+    <p>Use a design system for brand, a reusable slide format library for structure, and a QA loop for polish.</p>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Published with Dropthis</div>
+    <h2>From idea → HTML → public URL.</h2>
+    <p class="big">This demo is a self-contained static site: keyboard navigation, progress, animations, responsive layout, and no external dependencies.</p>
+    <p><span class="pill">← / → navigate</span><span class="pill">space advances</span><span class="pill">web-ready</span></p>
+  </section>
+</main>
+<aside class="camera-plane" id="cameraPlane" aria-label="Mac camera preview">
+  <video id="cameraPreview" autoplay muted playsinline></video>
+  <div class="cam-fallback" id="camFallback">Click to enable camera preview</div>
+  <div class="cam-label">live cam</div>
+</aside>
+<div class="nav"><button id="prev" aria-label="Previous slide">←</button><div class="count" id="count"></div><button id="next" aria-label="Next slide">→</button></div>
+<div class="footer">AI slide demo</div>
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+let index=0;
+function show(i){ index=(i+slides.length)%slides.length; slides.forEach((s,n)=>s.classList.toggle('active',n===index)); document.getElementById('count').textContent=`${index+1} / ${slides.length}`; document.getElementById('progress').style.width=`${((index+1)/slides.length)*100}%`; }
+document.getElementById('prev').onclick=()=>show(index-1);
+document.getElementById('next').onclick=()=>show(index+1);
+addEventListener('keydown',e=>{ if(['ArrowRight',' ','PageDown'].includes(e.key)){e.preventDefault();show(index+1)} if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(index-1)} if(e.key==='Home')show(0); if(e.key==='End')show(slides.length-1); });
+const cameraPlane=document.getElementById('cameraPlane');
+const cameraPreview=document.getElementById('cameraPreview');
+const camFallback=document.getElementById('camFallback');
+async function startCamera(){
+  if(!navigator.mediaDevices?.getUserMedia){ camFallback.textContent='Camera API unavailable'; return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    cameraPreview.srcObject=stream;
+    cameraPlane.classList.add('on');
+  }catch(err){ camFallback.textContent='Camera permission needed'; }
+}
+cameraPlane.addEventListener('click', startCamera);
+startCamera();
+show(0);
+</script>
+</body>
+</html>

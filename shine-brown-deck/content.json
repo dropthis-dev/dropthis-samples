@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "title": "Shine Brown — Deep, Natural Tan for Any Skin",
+    "description": "The tanning cream behind 4M+ jars sold and 2M+ glowing customers. Vegan, cruelty-free, EU-made.",
+    "image": "assets/campaign/slide-1-hero.jpg",
+    "url": "https://www.byrokko.com/global/products/shine-brown"
+  },
+  "cta": { "label": "Shop Shine Brown", "href": "https://www.byrokko.com/global/products/shine-brown" },
+  "slides": [
+    { "image": "assets/campaign/slide-1-hero.jpg", "headline": "DEEP TAN. NO SUN NEEDED.", "sub": "Shine Brown builds a deep, natural-looking glow on any skin type." },
+    { "image": "assets/campaign/slide-2-skin.jpg", "headline": "FAST GLOW. EVERY SKIN TYPE.", "sub": "Real, even color in days — engineered to work on every skin type." },
+    { "image": "assets/campaign/slide-3-jars.jpg", "headline": "4 MILLION JARS. NO ACCIDENT.", "sub": "2M+ customers. 400,000+ reviews. The glow speaks for itself." },
+    { "image": "assets/campaign/slide-4-clean.jpg", "headline": "VEGAN. CRUELTY-FREE. EU-MADE.", "sub": "The original Shine Brown formula. Nothing you'd skip." },
+    { "image": "assets/campaign/slide-5-cta.jpg", "headline": "YOUR GLOW IS WAITING.", "sub": "Shine Brown. Tap to shop the deep, natural tan." }
+  ]
+}
